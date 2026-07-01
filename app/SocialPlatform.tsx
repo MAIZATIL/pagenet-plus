@@ -1,9 +1,11 @@
 // app/SocialPlatform.tsx
-'use client';
+// app/SocialPlatform.tsx
+'use client';  // <- MESTI BARIS PERTAMA!
 
+import React from 'react';
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { 
+// ... rest of imports
   Upload, Share2, Trash2, Edit3, PlusCircle, CheckCircle2, User, 
   Shield, Activity, Save, X, Radio, Image as ImageIcon, Users, Smile, 
   LogIn, LogOut, Home, Search, Bell, MessageCircle, Heart, Repeat, 
