@@ -1,11 +1,9 @@
 // app/SocialPlatform.tsx
-// app/SocialPlatform.tsx
-'use client';  // <- MESTI BARIS PERTAMA!
+'use client';
 
-import React from 'react';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-// ... rest of imports
+import { 
   Upload, Share2, Trash2, Edit3, PlusCircle, CheckCircle2, User, 
   Shield, Activity, Save, X, Radio, Image as ImageIcon, Users, Smile, 
   LogIn, LogOut, Home, Search, Bell, MessageCircle, Heart, Repeat, 
@@ -15,21 +13,366 @@ import { useRouter, useSearchParams } from 'next/navigation';
   Play, ThumbsUp, Link as LinkIcon, Menu
 } from 'lucide-react';
 
-// ... (AvatarSelector, VideoPlayerModal sama macam sebelum)
+// ============================================
+// AVATAR SELECTOR COMPONENT
+// ============================================
+const AvatarSelector = ({ onSelect, currentAvatar }: { onSelect: (avatar: string) => void, currentAvatar?: string }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [fileUpload, setFileUpload] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>(currentAvatar || '');
+  
+  const presetAvatars = [
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=adam',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=felix',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=emily',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=john',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=sarah',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=michael',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=jessica',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=david',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=anna',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=chris',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=emma',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=ryan',
+  ];
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setFileUpload(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setPreviewUrl(base64String);
+        onSelect(base64String);
+        setIsOpen(false);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const selectPresetAvatar = (url: string) => {
+    setPreviewUrl(url);
+    onSelect(url);
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="relative">
+      <div onClick={() => setIsOpen(!isOpen)} className="relative cursor-pointer group">
+        {previewUrl ? (
+          <img src={previewUrl} alt="Avatar" className="w-20 h-20 rounded-full border-2 border-red-500 object-cover hover:border-red-400 transition-all" />
+        ) : (
+          <div className="w-20 h-20 rounded-full border-2 border-red-500 bg-slate-800 flex items-center justify-center text-3xl text-slate-400 hover:border-red-400 transition-all">👤</div>
+        )}
+        <div className="absolute bottom-0 right-0 bg-slate-900 rounded-full p-1 border border-slate-700">
+          <Camera className="w-4 h-4 text-slate-400" />
+        </div>
+      </div>
+
+      {isOpen && (
+        <div className="absolute top-24 left-0 bg-slate-900 border border-slate-700 rounded-2xl p-4 w-80 shadow-2xl z-50">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-sm font-bold text-white">Choose Avatar</h3>
+            <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white"><X className="w-4 h-4" /></button>
+          </div>
+          <div className="mb-4 p-3 bg-slate-800 rounded-xl">
+            <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-700 p-2 rounded-lg transition-colors">
+              <Upload className="w-4 h-4 text-blue-400" />
+              <span className="text-xs text-white">Upload your own image</span>
+              <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+            </label>
+            {fileUpload && <p className="text-[10px] text-green-400 mt-1">✓ {fileUpload.name}</p>}
+          </div>
+          <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
+            {presetAvatars.map((avatar, index) => (
+              <button key={index} onClick={() => selectPresetAvatar(avatar)} className={`w-14 h-14 rounded-full border-2 transition-all hover:scale-105 ${previewUrl === avatar ? 'border-red-500' : 'border-slate-700 hover:border-slate-500'}`}>
+                <img src={avatar} alt={`Avatar ${index + 1}`} className="w-full h-full rounded-full" />
+              </button>
+            ))}
+          </div>
+          <button onClick={() => { const randomSeed = Math.random().toString(36).substring(7); const randomAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${randomSeed}`; selectPresetAvatar(randomAvatar); }} className="w-full mt-3 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-colors">
+            🎲 Random Avatar
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ============================================
+// VIDEO PLAYER MODAL
+// ============================================
+const VideoPlayerModal = ({ video, onClose, onAddToPost, formatViews, activeUser }: { 
+  video: any, 
+  onClose: () => void,
+  onAddToPost: (video: any) => void,
+  formatViews: (views: string) => string,
+  activeUser: any
+}) => {
+  if (!video) return null;
+  
+  const videoId = video.id?.videoId || video.id;
+  const snippet = video.snippet;
+  const statistics = video.statistics || {};
+  
+  const mockComments = [
+    { author: 'User_01', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=user1', text: 'This is amazing! Thanks for sharing! 🔥', time: '2 hours ago', likes: 12 },
+    { author: 'Analyst_Pro', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=analyst', text: 'Great content for social network analysis!', time: '5 hours ago', likes: 8 },
+    { author: 'Data_Scientist', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=data', text: 'Can you make more videos like this? 🙏', time: '1 day ago', likes: 5 }
+  ];
+
+  return (
+    <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50" onClick={onClose}>
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="sticky top-0 bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center z-10">
+          <h3 className="text-sm font-bold text-white truncate max-w-md">{snippet?.title || 'Video Player'}</h3>
+          <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-full transition-colors"><X className="w-5 h-5 text-slate-400" /></button>
+        </div>
+
+        <div className="p-4">
+          <div className="aspect-video bg-slate-950 rounded-xl overflow-hidden">
+            <iframe src={`https://www.youtube.com/embed/${videoId}`} title={snippet?.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full" />
+          </div>
+
+          <div className="mt-4">
+            <h2 className="text-xl font-bold text-white">{snippet?.title}</h2>
+            <div className="flex items-center gap-4 mt-2 text-sm text-slate-400 flex-wrap">
+              <span className="font-semibold text-slate-300">📺 {snippet?.channelTitle}</span>
+              <span>•</span>
+              <span>👁️ {statistics.viewCount ? formatViews(statistics.viewCount) : 'N/A'} views</span>
+              <span>•</span>
+              <span>👍 {statistics.likeCount ? formatViews(statistics.likeCount) : 'N/A'} likes</span>
+            </div>
+            {snippet?.description && (
+              <div className="mt-3 p-3 bg-slate-950 rounded-xl border border-slate-800">
+                <p className="text-xs text-slate-300 whitespace-pre-wrap line-clamp-3">{snippet.description}</p>
+                <button className="text-xs text-blue-400 hover:text-blue-300 mt-1">Show more</button>
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-slate-800">
+            <button onClick={() => { onAddToPost(video); onClose(); }} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-xl transition-colors flex items-center gap-2">
+              <PlusCircle className="w-4 h-4" /> Add to Post
+            </button>
+            <button onClick={() => { navigator.clipboard.writeText(`https://www.youtube.com/watch?v=${videoId}`); alert('📋 Video link copied!'); }} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-colors flex items-center gap-2">
+              <Copy className="w-4 h-4" /> Copy Link
+            </button>
+            <button onClick={() => { window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank'); }} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-colors flex items-center gap-2">
+              <ExternalLink className="w-4 h-4" /> Open YouTube
+            </button>
+          </div>
+
+          <div className="mt-6 pt-4 border-t border-slate-800">
+            <h4 className="text-sm font-bold text-slate-300 mb-4 flex items-center gap-2">
+              <MessageCircle className="w-4 h-4" /> Comments ({mockComments.length})
+            </h4>
+            
+            <div className="flex gap-3 mb-4">
+              <img src={activeUser?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'} alt="" className="w-8 h-8 rounded-full object-cover" />
+              <input type="text" placeholder={activeUser?.status === 'Disabled' ? 'Account disabled - Cannot comment' : 'Write a comment...'} disabled={activeUser?.status === 'Disabled'} className={`flex-1 bg-slate-950 border border-slate-800 rounded-full px-4 py-2 text-sm text-white focus:outline-none focus:border-red-500 ${activeUser?.status === 'Disabled' ? 'opacity-50 cursor-not-allowed' : ''}`} />
+              <button className={`px-4 py-2 text-white text-sm font-bold rounded-full transition-colors ${activeUser?.status === 'Disabled' ? 'bg-slate-700 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`} disabled={activeUser?.status === 'Disabled'}>
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
+              {mockComments.map((comment, index) => (
+                <div key={index} className="flex gap-3">
+                  <img src={comment.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-xs text-white">{comment.author}</span>
+                      <span className="text-[10px] text-slate-500">{comment.time}</span>
+                    </div>
+                    <p className="text-sm text-slate-300 mt-0.5">{comment.text}</p>
+                    <div className="flex items-center gap-4 mt-1">
+                      <button className="text-[10px] text-slate-500 hover:text-white transition-colors flex items-center gap-1">
+                        <ThumbsUp className="w-3 h-3" /> {comment.likes}
+                      </button>
+                      <button className="text-[10px] text-slate-500 hover:text-white transition-colors">Reply</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================
+// TYPES
+// ============================================
+interface EmojiReactions {
+  fire: number;
+  heart: number;
+  clap: number;
+  laugh: number;
+}
+
+interface Post {
+  id: string;
+  videoTitle: string;
+  channelTitle: string;
+  videoUrl?: string;
+  content: string;
+  workspaceName: string;
+  createdAt: string;
+  updatedAt?: string;
+  reactions: EmojiReactions;
+  reviewImage?: string;
+  authorUsername: string;
+  authorFullName: string;
+  authorAvatar?: string;
+  comments: Comment[];
+  shares: number;
+  views: number;
+  isEdited: boolean;
+}
+
+interface Comment {
+  id: string;
+  authorUsername: string;
+  authorFullName: string;
+  authorAvatar?: string;
+  content: string;
+  createdAt: string;
+  reactions: EmojiReactions;
+}
+
+interface UserProfile {
+  username: string;
+  fullName: string;
+  role: string;
+  bio: string;
+  avatar?: string;
+  status: 'Active' | 'Disabled';
+  followers: string[];
+  following: string[];
+  joinedAt: string;
+  lastActive: string;
+  postsCount: number;
+  totalReactions: number;
+}
+
+// ============================================
+// MAIN COMPONENT
+// ============================================
 export default function SocialPlatform() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   // ============================================
-  // ALL STATE (sama)
+  // 1. USER MANAGEMENT STATE
   // ============================================
   const [users, setUsers] = useState<UserProfile[]>([
-    // ... sama
+    {
+      username: 'ahmad_sna',
+      fullName: 'Ahmad Shahril',
+      role: 'Lead Network Analyst',
+      bio: 'CSC795 Network Specialist | Analyzing social ecosystems 🌐',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ahmad',
+      status: 'Active',
+      followers: ['siti_analyst', 'network_pro'],
+      following: ['siti_analyst'],
+      joinedAt: '2026-01-15',
+      lastActive: new Date().toISOString(),
+      postsCount: 0,
+      totalReactions: 0
+    },
+    {
+      username: 'siti_analyst',
+      fullName: 'Siti Nurhaliza',
+      role: 'Senior Data Analyst',
+      bio: 'Data scientist & social network analyst 📊',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=siti',
+      status: 'Active',
+      followers: ['ahmad_sna'],
+      following: ['ahmad_sna', 'network_pro'],
+      joinedAt: '2026-02-01',
+      lastActive: new Date().toISOString(),
+      postsCount: 0,
+      totalReactions: 0
+    },
+    {
+      username: 'network_pro',
+      fullName: 'PRO Network',
+      role: 'Network Admin',
+      bio: 'Professional network management',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=pro',
+      status: 'Active',
+      followers: ['siti_analyst'],
+      following: [],
+      joinedAt: '2026-01-20',
+      lastActive: new Date().toISOString(),
+      postsCount: 0,
+      totalReactions: 0
+    }
   ]);
 
   const [posts, setPosts] = useState<Post[]>([
-    // ... sama
+    {
+      id: 'post_1',
+      videoTitle: 'Social Network Analysis Tutorial',
+      channelTitle: 'Network Science',
+      videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      content: 'Great tutorial on SNA! Highly recommended for beginners. 🔥',
+      workspaceName: 'Network Science Lab',
+      createdAt: new Date(Date.now() - 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 3600000).toISOString(),
+      reactions: { fire: 5, heart: 3, clap: 2, laugh: 1 },
+      reviewImage: '',
+      authorUsername: 'ahmad_sna',
+      authorFullName: 'Ahmad Shahril',
+      authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ahmad',
+      comments: [
+        {
+          id: 'comment_1',
+          authorUsername: 'siti_analyst',
+          authorFullName: 'Siti Nurhaliza',
+          authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=siti',
+          content: 'Totally agree! This is gold! ✨',
+          createdAt: new Date(Date.now() - 1800000).toISOString(),
+          reactions: { fire: 2, heart: 1, clap: 0, laugh: 0 }
+        }
+      ],
+      shares: 3,
+      views: 120,
+      isEdited: false
+    },
+    {
+      id: 'post_2',
+      videoTitle: 'Understanding Network Clustering',
+      channelTitle: 'Data Science Hub',
+      videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      content: 'Mind-blowing insights on network clustering algorithms! 🤯',
+      workspaceName: 'Data Science Community',
+      createdAt: new Date(Date.now() - 7200000).toISOString(),
+      updatedAt: new Date(Date.now() - 7200000).toISOString(),
+      reactions: { fire: 8, heart: 5, clap: 4, laugh: 2 },
+      reviewImage: '',
+      authorUsername: 'siti_analyst',
+      authorFullName: 'Siti Nurhaliza',
+      authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=siti',
+      comments: [
+        {
+          id: 'comment_2',
+          authorUsername: 'network_pro',
+          authorFullName: 'PRO Network',
+          authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=pro',
+          content: 'Can you share the paper reference?',
+          createdAt: new Date(Date.now() - 3000000).toISOString(),
+          reactions: { fire: 0, heart: 1, clap: 0, laugh: 0 }
+        }
+      ],
+      shares: 7,
+      views: 245,
+      isEdited: false
+    }
   ]);
 
   const [currentUser, setCurrentUser] = useState<string>('ahmad_sna');
@@ -46,12 +389,16 @@ export default function SocialPlatform() {
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'
   });
 
+  // Post creation states
   const [selectedVideo, setSelectedVideo] = useState<any>(null);
   const [postContent, setPostContent] = useState('');
   const [postImage, setPostImage] = useState('');
   const [workspaceName, setWorkspaceName] = useState('General');
   const [showCreatePost, setShowCreatePost] = useState(false);
 
+  // ============================================
+  // 2. SEARCH SYSTEM STATE
+  // ============================================
   const [query, setQuery] = useState('');
   const [contentType, setContentType] = useState('video'); 
   const [sortBy, setSortBy] = useState('relevance'); 
@@ -61,9 +408,13 @@ export default function SocialPlatform() {
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
   const [error, setError] = useState('');
 
+  // ============================================
+  // VIDEO PLAYER STATE
+  // ============================================
   const [selectedVideoPlayer, setSelectedVideoPlayer] = useState<any>(null);
   const [isVideoPlayerOpen, setIsVideoPlayerOpen] = useState(false);
 
+  // UI states
   const [activeTab, setActiveTab] = useState<'feed' | 'search' | 'profile'>('feed');
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
@@ -735,7 +1086,7 @@ export default function SocialPlatform() {
             </button>
           </div>
 
-          {/* Login Modal - Mobile Friendly */}
+          {/* Login Modal */}
           {isLoginModalOpen && (
             <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full">
@@ -752,7 +1103,7 @@ export default function SocialPlatform() {
             </div>
           )}
 
-          {/* Register Modal - Mobile Friendly */}
+          {/* Register Modal */}
           {isRegisterModalOpen && (
             <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
@@ -858,11 +1209,12 @@ export default function SocialPlatform() {
         </div>
       </nav>
 
+      {/* ===== REST OF THE UI (Feed, Search, Profile) ===== */}
       <div className="max-w-6xl mx-auto px-3 md:px-4 py-4 md:py-6">
-        {/* ===== FEED TAB - MOBILE FRIENDLY ===== */}
+        {/* FEED TAB */}
         {activeTab === 'feed' && (
           <div className="flex flex-col md:grid md:grid-cols-4 gap-4 md:gap-6">
-            {/* Left Sidebar - Hidden on mobile, show on desktop */}
+            {/* Left Sidebar - Desktop only */}
             <div className="hidden md:block md:col-span-1 space-y-4">
               {/* User Card */}
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
@@ -878,11 +1230,6 @@ export default function SocialPlatform() {
                   <div><span className="font-bold text-white">{activeUser.followers.length}</span> <span className="text-slate-500">Followers</span></div>
                   <div><span className="font-bold text-white">{activeUser.following.length}</span> <span className="text-slate-500">Following</span></div>
                 </div>
-                <div className="mt-2">
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full ${activeUser.status === 'Active' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                    {activeUser.status}
-                  </span>
-                </div>
               </div>
 
               {/* Trending */}
@@ -891,11 +1238,7 @@ export default function SocialPlatform() {
                 {getTrendingPosts().map(post => (
                   <div key={post.id} className="mb-2 pb-2 border-b border-slate-800 last:border-0">
                     <p className="text-xs text-slate-300 line-clamp-2">{post.content}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <p className="text-[10px] text-slate-500">by @{post.authorUsername}</p>
-                      <span className="text-[10px] text-slate-600">•</span>
-                      <span className="text-[10px] text-slate-500">{getTotalReactions(post)} reactions</span>
-                    </div>
+                    <p className="text-[10px] text-slate-500 mt-1">by @{post.authorUsername}</p>
                   </div>
                 ))}
               </div>
@@ -906,12 +1249,12 @@ export default function SocialPlatform() {
                 {getRecommendedUsers().map(user => (
                   <div key={user.username} className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <img src={user.avatar} alt="" className="w-6 h-6 rounded-full object-cover" />
-                      <span className="text-xs text-white cursor-pointer hover:text-red-400 transition-colors" onClick={() => viewUserProfile(user.username)}>
+                      <img src={user.avatar} alt="" className="w-6 h-6 rounded-full" />
+                      <span className="text-xs text-white cursor-pointer hover:text-red-400" onClick={() => viewUserProfile(user.username)}>
                         @{user.username}
                       </span>
                     </div>
-                    <button onClick={() => followUser(user.username)} className="text-[10px] bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-white font-bold transition-colors">
+                    <button onClick={() => followUser(user.username)} className="text-[10px] bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-white font-bold">
                       {activeUser.following.includes(user.username) ? 'Following' : 'Follow'}
                     </button>
                   </div>
@@ -919,10 +1262,10 @@ export default function SocialPlatform() {
               </div>
             </div>
 
-            {/* Mobile User Card - Only on mobile */}
+            {/* Mobile User Card */}
             <div className="md:hidden bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-3">
               <div className="flex items-center gap-3">
-                <img src={activeUser.avatar} alt="" className="w-12 h-12 rounded-full border-2 border-red-500 object-cover" />
+                <img src={activeUser.avatar} alt="" className="w-12 h-12 rounded-full border-2 border-red-500" />
                 <div className="flex-1">
                   <p className="font-bold text-sm text-white">{activeUser.fullName}</p>
                   <p className="text-xs text-slate-400">@{activeUser.username}</p>
@@ -931,14 +1274,9 @@ export default function SocialPlatform() {
                   {activeUser.status}
                 </span>
               </div>
-              <div className="mt-2 flex gap-4 text-xs">
-                <div><span className="font-bold text-white">{activeUser.postsCount}</span> <span className="text-slate-500">Posts</span></div>
-                <div><span className="font-bold text-white">{activeUser.followers.length}</span> <span className="text-slate-500">Followers</span></div>
-                <div><span className="font-bold text-white">{activeUser.following.length}</span> <span className="text-slate-500">Following</span></div>
-              </div>
             </div>
 
-            {/* Main Feed - Full width on mobile */}
+            {/* Main Feed */}
             <div className="md:col-span-2 w-full">
               {/* Create Post Button */}
               <button
@@ -947,7 +1285,7 @@ export default function SocialPlatform() {
                 disabled={activeUser.status === 'Disabled'}
               >
                 <div className="flex items-center gap-3">
-                  <img src={activeUser.avatar} alt="" className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover" />
+                  <img src={activeUser.avatar} alt="" className="w-8 h-8 md:w-10 md:h-10 rounded-full" />
                   <span className="text-slate-400 text-sm">
                     {activeUser.status === 'Disabled' ? 'Account Disabled' : "What's on your mind?"}
                   </span>
@@ -956,10 +1294,10 @@ export default function SocialPlatform() {
 
               {/* Create Post Form */}
               {showCreatePost && activeUser.status === 'Active' && (
-                <div id="create-post-section" className="bg-slate-900 border-2 border-red-500/30 rounded-2xl p-4 mb-6">
+                <div className="bg-slate-900 border-2 border-red-500/30 rounded-2xl p-4 mb-6">
                   <form onSubmit={createPost} className="space-y-3">
                     <div className="flex items-center gap-3">
-                      <img src={activeUser.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
+                      <img src={activeUser.avatar} alt="" className="w-10 h-10 rounded-full" />
                       <div className="flex-1">
                         <p className="font-bold text-sm text-white">{activeUser.fullName}</p>
                         <p className="text-xs text-slate-500">@{activeUser.username}</p>
@@ -970,14 +1308,14 @@ export default function SocialPlatform() {
                       placeholder="Write your review..."
                       value={postContent}
                       onChange={(e) => setPostContent(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white min-h-[80px] focus:outline-none focus:border-slate-700"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white min-h-[80px] focus:outline-none"
                       required
                     />
 
                     {selectedVideo && (
                       <div className="bg-slate-950 rounded-xl p-3 border border-slate-800 flex items-center justify-between">
                         <p className="text-xs text-slate-300 line-clamp-1 flex-1">🎬 {selectedVideo.snippet?.title}</p>
-                        <button type="button" onClick={() => setSelectedVideo(null)} className="text-xs text-red-400 hover:text-red-300 ml-2">
+                        <button type="button" onClick={() => setSelectedVideo(null)} className="text-xs text-red-400 hover:text-red-300">
                           <X className="w-4 h-4" />
                         </button>
                       </div>
@@ -992,7 +1330,7 @@ export default function SocialPlatform() {
                         className="flex-1 min-w-[120px] bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
                       />
                       <label className="cursor-pointer bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg text-xs text-slate-300 transition-colors">
-                        <ImageIcon className="w-4 h-4 inline" />
+                        <ImageIcon className="w-4 h-4 inline" /> Image
                         <input
                           type="file"
                           accept="image/*"
@@ -1030,7 +1368,7 @@ export default function SocialPlatform() {
                 </div>
               )}
 
-              {/* Feed Posts - Mobile optimized */}
+              {/* Feed Posts */}
               <div className="space-y-4">
                 {posts.map(post => {
                   const author = users.find(u => u.username === post.authorUsername);
@@ -1038,13 +1376,13 @@ export default function SocialPlatform() {
                   
                   return (
                     <div key={post.id} id={`post-${post.id}`} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 hover:border-slate-700 transition-all">
-                      {/* Author - Mobile friendly */}
+                      {/* Author */}
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           <img 
                             src={post.authorAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.authorUsername}`} 
                             alt="" 
-                            className="w-10 h-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-red-500 transition-all flex-shrink-0"
+                            className="w-10 h-10 rounded-full cursor-pointer hover:ring-2 hover:ring-red-500 transition-all flex-shrink-0"
                             onClick={() => viewUserProfile(post.authorUsername)}
                           />
                           <div className="min-w-0 flex-1">
@@ -1056,12 +1394,8 @@ export default function SocialPlatform() {
                               {post.authorUsername === currentUser && (
                                 <span className="text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">You</span>
                               )}
-                              {post.isEdited && (
-                                <span className="text-[10px] text-slate-500">(edited)</span>
-                              )}
-                              {isAuthorDisabled && (
-                                <span className="text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">Disabled</span>
-                              )}
+                              {post.isEdited && <span className="text-[10px] text-slate-500">(edited)</span>}
+                              {isAuthorDisabled && <span className="text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">Disabled</span>}
                             </div>
                             <div className="flex items-center gap-2 text-[10px] text-slate-500 flex-wrap">
                               <span>{formatTime(post.createdAt)}</span>
@@ -1072,10 +1406,10 @@ export default function SocialPlatform() {
                         </div>
                         {post.authorUsername === currentUser && activeUser.status === 'Active' && (
                           <div className="flex gap-1 flex-shrink-0 ml-2">
-                            <button onClick={() => { setEditingPostId(post.id); setEditContent(post.content); setEditImage(post.reviewImage || ''); }} className="text-slate-500 hover:text-amber-400 text-xs p-1 rounded hover:bg-slate-800 transition-colors">
+                            <button onClick={() => { setEditingPostId(post.id); setEditContent(post.content); setEditImage(post.reviewImage || ''); }} className="text-slate-500 hover:text-amber-400 text-xs p-1 rounded hover:bg-slate-800">
                               <Edit3 className="w-3.5 h-3.5" />
                             </button>
-                            <button onClick={() => deletePost(post.id)} className="text-slate-500 hover:text-red-400 text-xs p-1 rounded hover:bg-slate-800 transition-colors">
+                            <button onClick={() => deletePost(post.id)} className="text-slate-500 hover:text-red-400 text-xs p-1 rounded hover:bg-slate-800">
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
@@ -1088,7 +1422,7 @@ export default function SocialPlatform() {
                           <textarea
                             value={editContent}
                             onChange={(e) => setEditContent(e.target.value)}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-red-500"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-white focus:outline-none"
                             rows={3}
                           />
                           <div>
@@ -1109,10 +1443,10 @@ export default function SocialPlatform() {
                             {editImage && <img src={editImage} alt="" className="w-20 h-14 object-cover rounded-lg border border-slate-800 mt-2" />}
                           </div>
                           <div className="flex gap-2">
-                            <button onClick={() => editPost(post.id)} className="bg-green-600 hover:bg-green-700 text-white text-xs px-4 py-1.5 rounded-lg transition-colors">
+                            <button onClick={() => editPost(post.id)} className="bg-green-600 hover:bg-green-700 text-white text-xs px-4 py-1.5 rounded-lg">
                               <Save className="w-3 h-3 inline mr-1" /> Save
                             </button>
-                            <button onClick={() => setEditingPostId(null)} className="bg-slate-800 text-slate-400 text-xs px-4 py-1.5 rounded-lg hover:bg-slate-700 transition-colors">
+                            <button onClick={() => setEditingPostId(null)} className="bg-slate-800 text-slate-400 text-xs px-4 py-1.5 rounded-lg hover:bg-slate-700">
                               Cancel
                             </button>
                           </div>
@@ -1134,7 +1468,7 @@ export default function SocialPlatform() {
                         </>
                       )}
 
-                      {/* Actions - Mobile friendly */}
+                      {/* Actions */}
                       <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-slate-800 relative">
                         <button
                           onClick={() => {
@@ -1182,19 +1516,19 @@ export default function SocialPlatform() {
                           <Share2 className="w-4 h-4" /> {post.shares}
                         </button>
 
-                        {/* Share Modal - Mobile friendly */}
+                        {/* Share Modal */}
                         {showShareModal === post.id && (
                           <div className="absolute right-0 top-full mt-2 bg-slate-950 border border-slate-700 rounded-xl p-3 w-56 z-10 shadow-xl">
                             <div className="space-y-2">
                               <h4 className="text-xs font-bold text-slate-400">Share</h4>
                               <div className="flex gap-1.5 flex-wrap">
-                                <button onClick={() => shareToExternalPlatform(post.id, 'twitter')} className="p-1.5 bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors text-sm">🐦</button>
-                                <button onClick={() => shareToExternalPlatform(post.id, 'facebook')} className="p-1.5 bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors text-sm">📘</button>
-                                <button onClick={() => shareToExternalPlatform(post.id, 'whatsapp')} className="p-1.5 bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors text-sm">💬</button>
-                                <button onClick={() => shareToExternalPlatform(post.id, 'telegram')} className="p-1.5 bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors text-sm">✈️</button>
+                                <button onClick={() => shareToExternalPlatform(post.id, 'twitter')} className="p-1.5 bg-slate-800 rounded-lg hover:bg-slate-700 text-sm">🐦</button>
+                                <button onClick={() => shareToExternalPlatform(post.id, 'facebook')} className="p-1.5 bg-slate-800 rounded-lg hover:bg-slate-700 text-sm">📘</button>
+                                <button onClick={() => shareToExternalPlatform(post.id, 'whatsapp')} className="p-1.5 bg-slate-800 rounded-lg hover:bg-slate-700 text-sm">💬</button>
+                                <button onClick={() => shareToExternalPlatform(post.id, 'telegram')} className="p-1.5 bg-slate-800 rounded-lg hover:bg-slate-700 text-sm">✈️</button>
                               </div>
                               <div className="flex gap-1">
-                                <button onClick={() => sharePost(post.id, 'copy')} className="flex-1 text-xs bg-slate-800 hover:bg-slate-700 text-white px-2 py-1 rounded-lg transition-colors">
+                                <button onClick={() => sharePost(post.id, 'copy')} className="flex-1 text-xs bg-slate-800 hover:bg-slate-700 text-white px-2 py-1 rounded-lg">
                                   <Copy className="w-3 h-3 inline" /> Copy
                                 </button>
                                 <button 
@@ -1203,7 +1537,7 @@ export default function SocialPlatform() {
                                     navigator.clipboard.writeText(link);
                                     alert('📋 Link copied!');
                                   }}
-                                  className="flex-1 text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-lg transition-colors"
+                                  className="flex-1 text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-lg"
                                 >
                                   <LinkIcon className="w-3 h-3 inline" /> Link
                                 </button>
@@ -1220,8 +1554,8 @@ export default function SocialPlatform() {
                           {post.comments.map(comment => (
                             <div key={comment.id} className="bg-slate-950 rounded-lg p-2 border border-slate-800">
                               <div className="flex items-center gap-2">
-                                <img src={comment.authorAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.authorUsername}`} alt="" className="w-5 h-5 rounded-full object-cover" />
-                                <span className="font-bold text-xs text-white cursor-pointer hover:text-red-400 transition-colors" onClick={() => viewUserProfile(comment.authorUsername)}>
+                                <img src={comment.authorAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.authorUsername}`} alt="" className="w-5 h-5 rounded-full" />
+                                <span className="font-bold text-xs text-white cursor-pointer hover:text-red-400" onClick={() => viewUserProfile(comment.authorUsername)}>
                                   {comment.authorFullName}
                                 </span>
                                 <span className="text-[10px] text-slate-500">@{comment.authorUsername}</span>
@@ -1237,9 +1571,9 @@ export default function SocialPlatform() {
                                 value={commentText}
                                 onChange={(e) => setCommentText(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && addComment(post.id)}
-                                className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                                className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
                               />
-                              <button onClick={() => addComment(post.id)} className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg transition-colors">
+                              <button onClick={() => addComment(post.id)} className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg">
                                 Reply
                               </button>
                             </div>
@@ -1256,7 +1590,7 @@ export default function SocialPlatform() {
               </div>
             </div>
 
-            {/* Right Sidebar - Hidden on mobile */}
+            {/* Right Sidebar - Desktop only */}
             <div className="hidden md:block md:col-span-1 space-y-4">
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">📊 Analytics</h3>
@@ -1272,8 +1606,8 @@ export default function SocialPlatform() {
                 {users.filter(u => u.status === 'Active').slice(0, 5).map(user => (
                   <div key={user.username} className="flex items-center gap-2 py-1">
                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                    <img src={user.avatar} alt="" className="w-5 h-5 rounded-full object-cover cursor-pointer" onClick={() => viewUserProfile(user.username)} />
-                    <span className="text-xs text-slate-300 cursor-pointer hover:text-white transition-colors" onClick={() => viewUserProfile(user.username)}>
+                    <img src={user.avatar} alt="" className="w-5 h-5 rounded-full cursor-pointer" onClick={() => viewUserProfile(user.username)} />
+                    <span className="text-xs text-slate-300 cursor-pointer hover:text-white" onClick={() => viewUserProfile(user.username)}>
                       @{user.username}
                     </span>
                   </div>
@@ -1283,7 +1617,7 @@ export default function SocialPlatform() {
           </div>
         )}
 
-        {/* ===== SEARCH TAB - MOBILE FRIENDLY ===== */}
+        {/* SEARCH TAB */}
         {activeTab === 'search' && (
           <div className="max-w-4xl mx-auto">
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 md:p-6">
@@ -1296,7 +1630,7 @@ export default function SocialPlatform() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit(e)}
-                  className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+                  className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-sm focus:outline-none"
                 />
                 <button onClick={handleSearchSubmit} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-bold text-sm transition-colors whitespace-nowrap">
                   {loading ? '...' : 'Search'}
@@ -1336,8 +1670,6 @@ export default function SocialPlatform() {
                           router.push(`/video/${item.id.videoId}`);
                         } else if (item.id?.channelId) {
                           router.push(`/channel/${item.id.channelId}`);
-                        } else {
-                          alert('Open in YouTube');
                         }
                       }}
                     >
@@ -1345,7 +1677,7 @@ export default function SocialPlatform() {
                         <img src={snippet?.thumbnails?.medium?.url || snippet?.thumbnails?.high?.url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                         {item.id?.videoId && (
                           <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center shadow-2xl">
+                            <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center">
                               <Play className="w-6 h-6 text-white ml-1" />
                             </div>
                           </div>
@@ -1412,11 +1744,10 @@ export default function SocialPlatform() {
           </div>
         )}
 
-        {/* ===== PROFILE TAB - MOBILE FRIENDLY ===== */}
+        {/* PROFILE TAB */}
         {activeTab === 'profile' && (
           <div className="max-w-3xl mx-auto">
             {viewingUserProfile && viewingUserProfile !== currentUser ? (
-              // View other user profile
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 md:p-6">
                 <button onClick={() => { setViewingUserProfile(null); router.push('/'); }} className="text-slate-400 hover:text-white text-sm mb-4 flex items-center gap-1">
                   ← Back
@@ -1429,7 +1760,7 @@ export default function SocialPlatform() {
                   return (
                     <>
                       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-4 bg-slate-950 rounded-xl border border-slate-800">
-                        <img src={viewedUser.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${viewedUser.username}`} alt="" className="w-20 h-20 rounded-full border-4 border-red-500 object-cover" />
+                        <img src={viewedUser.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${viewedUser.username}`} alt="" className="w-20 h-20 rounded-full border-4 border-red-500" />
                         <div className="flex-1 text-center sm:text-left">
                           <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
                             <h2 className="text-xl font-bold text-white">{viewedUser.fullName}</h2>
@@ -1479,29 +1810,27 @@ export default function SocialPlatform() {
                 })()}
               </div>
             ) : editingProfile && tempProfile ? (
-              // Edit Profile
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 md:p-6">
                 <h3 className="text-lg font-bold text-white mb-4">Edit Profile</h3>
                 <div className="flex flex-col items-center gap-4 mb-4">
                   <AvatarSelector onSelect={(avatar) => setTempProfile({...tempProfile, avatar})} currentAvatar={tempProfile.avatar} />
                   <button onClick={() => setEditingProfile(false)} className="text-xs text-slate-400 hover:text-white">Cancel</button>
                 </div>
-                <input type="text" placeholder="Full Name" value={tempProfile.fullName} onChange={(e) => setTempProfile({...tempProfile, fullName: e.target.value})} className="w-full bg-slate-950 border border-slate-800 px-4 py-2 rounded-lg text-white focus:outline-none focus:border-red-500 mb-3 text-sm" />
-                <input type="text" placeholder="Role" value={tempProfile.role} onChange={(e) => setTempProfile({...tempProfile, role: e.target.value})} className="w-full bg-slate-950 border border-slate-800 px-4 py-2 rounded-lg text-white focus:outline-none focus:border-red-500 mb-3 text-sm" />
-                <textarea placeholder="Bio" value={tempProfile.bio} onChange={(e) => setTempProfile({...tempProfile, bio: e.target.value})} className="w-full bg-slate-950 border border-slate-800 px-4 py-2 rounded-lg text-white focus:outline-none focus:border-red-500 mb-3 text-sm" rows={3} />
+                <input type="text" placeholder="Full Name" value={tempProfile.fullName} onChange={(e) => setTempProfile({...tempProfile, fullName: e.target.value})} className="w-full bg-slate-950 border border-slate-800 px-4 py-2 rounded-lg text-white focus:outline-none mb-3 text-sm" />
+                <input type="text" placeholder="Role" value={tempProfile.role} onChange={(e) => setTempProfile({...tempProfile, role: e.target.value})} className="w-full bg-slate-950 border border-slate-800 px-4 py-2 rounded-lg text-white focus:outline-none mb-3 text-sm" />
+                <textarea placeholder="Bio" value={tempProfile.bio} onChange={(e) => setTempProfile({...tempProfile, bio: e.target.value})} className="w-full bg-slate-950 border border-slate-800 px-4 py-2 rounded-lg text-white focus:outline-none mb-3 text-sm" rows={3} />
                 <button onClick={() => { editUserProfile(currentUser, tempProfile); setEditingProfile(false); setTempProfile(null); }} className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-xl font-bold transition-colors text-sm">
                   <Save className="w-4 h-4 inline mr-2" /> Save Changes
                 </button>
               </div>
             ) : (
-              // My Profile
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 md:p-6">
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-4 bg-slate-950 rounded-xl border border-slate-800">
                   <div className="relative">
-                    <img src={activeUser.avatar} alt="" className="w-20 h-20 rounded-full border-4 border-red-500 object-cover" />
+                    <img src={activeUser.avatar} alt="" className="w-20 h-20 rounded-full border-4 border-red-500" />
                     <button 
                       onClick={() => { if (activeUser.status === 'Disabled') { alert('Account disabled!'); return; } setTempProfile({...activeUser}); setEditingProfile(true); }} 
-                      className="absolute bottom-0 right-0 bg-slate-900 rounded-full p-1.5 border border-slate-700 hover:bg-slate-800 transition-all"
+                      className="absolute bottom-0 right-0 bg-slate-900 rounded-full p-1.5 border border-slate-700 hover:bg-slate-800"
                       disabled={activeUser.status === 'Disabled'}
                     >
                       <Camera className="w-3.5 h-3.5 text-slate-400" />
@@ -1521,7 +1850,7 @@ export default function SocialPlatform() {
                     </div>
                     
                     {activeUser.status === 'Active' && (
-                      <button onClick={selfDisableAccount} className="mt-3 text-xs bg-red-600/20 hover:bg-red-600/30 text-red-400 px-4 py-2 rounded-xl font-bold transition-colors border border-red-500/30 flex items-center gap-2">
+                      <button onClick={selfDisableAccount} className="mt-3 text-xs bg-red-600/20 hover:bg-red-600/30 text-red-400 px-4 py-2 rounded-xl font-bold border border-red-500/30 flex items-center gap-2">
                         <UserMinus className="w-3.5 h-3.5" /> Disable Account
                       </button>
                     )}

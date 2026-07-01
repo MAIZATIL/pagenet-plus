@@ -1,67 +1,78 @@
-import { NextResponse } from 'next/server';
+// app/api/youtube/search/route.ts
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const query = searchParams.get('q') || '';
-  const contentType = searchParams.get('type') || 'video';
-  const sortBy = searchParams.get('order') || 'relevance';
-  const pageToken = searchParams.get('pageToken') || ''; // Ambil token page dari frontend
-
-  const apiKey = 'AIzaSyB20PVjQIVoiawwbWKycWXDIOcrdygfsc0';
+export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams;
+  const query = searchParams.get('q');
+  const type = searchParams.get('type') || 'video';
+  const order = searchParams.get('order') || 'relevance';
+  const pageToken = searchParams.get('pageToken');
 
   if (!query) {
-    return NextResponse.json({ error: 'Query parameter is required' }, { status: 400 });
+    return NextResponse.json({ error: 'Missing query parameter' }, { status: 400 });
+  }
+
+  const apiKey = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
+
+  if (!apiKey) {
+    return NextResponse.json({ error: 'YouTube API key is not configured' }, { status: 500 });
   }
 
   try {
-    // Tambah &pageToken=${pageToken} ke dalam URL YouTube API
-    let searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=${contentType}&order=${sortBy}&maxResults=12&key=${apiKey}`;
+    const url = new URL('https://www.googleapis.com/youtube/v3/search');
+    url.searchParams.set('part', 'snippet');
+    url.searchParams.set('q', query);
+    url.searchParams.set('type', type);
+    url.searchParams.set('order', order);
+    url.searchParams.set('maxResults', '10');
+    url.searchParams.set('key', apiKey);
     if (pageToken) {
-      searchUrl += `&pageToken=${pageToken}`;
+      url.searchParams.set('pageToken', pageToken);
     }
 
-    const searchRes = await fetch(searchUrl);
-    const searchData = await searchRes.json();
+    const response = await fetch(url.toString());
+    const data = await response.json();
 
-    if (!searchRes.ok) {
-      return NextResponse.json({ error: searchData.error?.message || 'YouTube API search failure' }, { status: searchRes.status });
+    if (!response.ok) {
+      return NextResponse.json({ error: data.error?.message || 'YouTube API error' }, { status: response.status });
     }
 
-    const items = searchData.items || [];
-    const nextPageToken = searchData.nextPageToken || null; // Simpan token halaman seterusnya
+    // Fetch statistics for each video
+    const videoIds = data.items
+      .filter((item: any) => item.id?.videoId)
+      .map((item: any) => item.id.videoId)
+      .join(',');
 
-    if (items.length === 0) {
-      return NextResponse.json({ items: [], nextPageToken: null });
+    let statisticsData = {};
+    if (videoIds) {
+      const statsUrl = new URL('https://www.googleapis.com/youtube/v3/videos');
+      statsUrl.searchParams.set('part', 'statistics');
+      statsUrl.searchParams.set('id', videoIds);
+      statsUrl.searchParams.set('key', apiKey);
+      
+      const statsResponse = await fetch(statsUrl.toString());
+      statisticsData = await statsResponse.json();
     }
 
-    // Ambil statistik tambahan (views/likes) untuk video/channel
-    const idList = items.map((item: any) => {
-      if (contentType === 'video') return item.id?.videoId;
-      if (contentType === 'channel') return item.id?.channelId;
-      return null;
-    }).filter(Boolean).join(',');
-
-    if (idList && (contentType === 'video' || contentType === 'channel')) {
-      const endpoint = contentType === 'video' ? 'videos' : 'channels';
-      const statsUrl = `https://www.googleapis.com/youtube/v3/${endpoint}?part=statistics&id=${idList}&key=${apiKey}`;
-      const statsRes = await fetch(statsUrl);
-      const statsData = await statsRes.json();
-
-      if (statsRes.ok && statsData.items) {
-        const statsMap = new Map(statsData.items.map((i: any) => [i.id, i.statistics]));
-        items.forEach((item: any) => {
-          const targetId = contentType === 'video' ? item.id?.videoId : item.id?.channelId;
-          if (targetId && statsMap.has(targetId)) {
-            item.statistics = statsMap.get(targetId);
-          }
-        });
+    // Merge statistics with search results
+    const itemsWithStats = data.items.map((item: any) => {
+      if (item.id?.videoId) {
+        const stats = (statisticsData as any).items?.find((s: any) => s.id === item.id.videoId);
+        return {
+          ...item,
+          statistics: stats?.statistics || {}
+        };
       }
-    }
+      return item;
+    });
 
-    // Pulangkan sekali nextPageToken ke frontend
-    return NextResponse.json({ items, nextPageToken });
-
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({
+      ...data,
+      items: itemsWithStats,
+      nextPageToken: data.nextPageToken
+    });
+  } catch (error) {
+    console.error('YouTube API error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

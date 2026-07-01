@@ -1,14 +1,9 @@
 // app/video/[videoId]/page.tsx
-// app/video/[videoId]/page.tsx
-// app/channel/[channelId]/page.tsx
-'use client';  // <- MESTI BARIS PERTAMA!
+'use client';
 
-import React from 'react';
-import { useState, useEffect, use } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
-// ... rest of imports
-// ... rest of imports
-import { ArrowLeft, Eye, ThumbsUp, MessageCircle, User, Calendar, Share2, Copy, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Eye, ThumbsUp, MessageCircle, Calendar, Share2, Copy, ExternalLink } from 'lucide-react';
 
 interface PageProps {
   params: Promise<{ videoId: string }>;
@@ -38,7 +33,6 @@ export default function VideoDetailPage({ params }: PageProps) {
       }
 
       try {
-        // Fetch video details
         const videoRes = await fetch(
           `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${videoId}&key=${apiKey}`
         );
@@ -47,7 +41,6 @@ export default function VideoDetailPage({ params }: PageProps) {
         if (videoJson.items && videoJson.items.length > 0) {
           setVideoData(videoJson.items[0]);
           
-          // Fetch channel details
           const channelId = videoJson.items[0].snippet.channelId;
           const channelRes = await fetch(
             `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}&key=${apiKey}`
@@ -60,7 +53,6 @@ export default function VideoDetailPage({ params }: PageProps) {
           throw new Error('Video not found.');
         }
 
-        // Fetch comments
         const commentsRes = await fetch(
           `https://www.googleapis.com/youtube/v3/commentThreads?part=snippet,replies&videoId=${videoId}&maxResults=20&key=${apiKey}`
         );
@@ -109,12 +101,10 @@ export default function VideoDetailPage({ params }: PageProps) {
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8">
       <div className="max-w-5xl mx-auto">
-        {/* Back Button */}
         <Link href="/" className="text-xs text-slate-400 hover:text-red-400 transition-colors inline-flex items-center gap-1.5 mb-6">
           <ArrowLeft className="w-3.5 h-3.5" /> Back Hub
         </Link>
         
-        {/* Video Player */}
         <div className="relative aspect-video rounded-2xl overflow-hidden bg-black mb-6 shadow-2xl">
           <iframe 
             src={`https://www.youtube.com/embed/${videoId}`} 
@@ -125,11 +115,9 @@ export default function VideoDetailPage({ params }: PageProps) {
           />
         </div>
 
-        {/* Video Info */}
         <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl mb-6">
           <h1 className="text-xl font-bold text-white mb-3">{snippet?.title}</h1>
           
-          {/* Channel Info */}
           <div className="flex flex-wrap items-center gap-4 text-sm text-slate-400 mb-4">
             <Link 
               href={`/channel/${snippet?.channelId}`} 
@@ -156,7 +144,6 @@ export default function VideoDetailPage({ params }: PageProps) {
             </span>
           </div>
 
-          {/* Description */}
           {snippet?.description && (
             <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
               <p className="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed">
@@ -165,7 +152,6 @@ export default function VideoDetailPage({ params }: PageProps) {
             </div>
           )}
 
-          {/* Actions */}
           <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-slate-800">
             <button 
               onClick={() => {
@@ -204,7 +190,6 @@ export default function VideoDetailPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* Comments Section */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
           <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-6 flex items-center gap-2">
             <MessageCircle className="w-4 h-4" /> Node Conversation Threads ({comments.length})
@@ -247,7 +232,6 @@ export default function VideoDetailPage({ params }: PageProps) {
                           </span>
                         </div>
                         
-                        {/* Replies */}
                         {replies.length > 0 && (
                           <div className="mt-3">
                             <button 
