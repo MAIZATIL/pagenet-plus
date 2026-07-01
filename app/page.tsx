@@ -1,6 +1,6 @@
-// app/page.tsx
-import ClientWrapper from './ClientWrapper';
+// app/video/[videoId]/page.tsx
+import React from 'react';  // <- tambah ni
+'use client';
 
-export default function Page() {
-  return <ClientWrapper />;
-}
+import { useState, useEffect, use } from 'react';
+// ... rest of code
