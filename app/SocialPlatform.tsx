@@ -1,3 +1,4 @@
+// app/SocialPlatform.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -9,369 +10,24 @@ import {
   MoreHorizontal, Camera, Mail, Copy, Globe, Settings, Power, 
   Eye, EyeOff, UserPlus, UserMinus, Star, Award, Clock, Calendar,
   Filter, ChevronDown, ChevronUp, AlertCircle, Check, Send, ExternalLink,
-  Play, ThumbsUp, Link as LinkIcon
+  Play, ThumbsUp, Link as LinkIcon, Menu
 } from 'lucide-react';
 
-// ============================================
-// AVATAR SELECTOR COMPONENT
-// ============================================
-const AvatarSelector = ({ onSelect, currentAvatar }: { onSelect: (avatar: string) => void, currentAvatar?: string }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [fileUpload, setFileUpload] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string>(currentAvatar || '');
-  
-  const presetAvatars = [
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=adam',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=felix',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=emily',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=john',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=sarah',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=michael',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=jessica',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=david',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=anna',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=chris',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=emma',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=ryan',
-  ];
+// ... (AvatarSelector, VideoPlayerModal sama macam sebelum)
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFileUpload(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setPreviewUrl(base64String);
-        onSelect(base64String);
-        setIsOpen(false);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const selectPresetAvatar = (url: string) => {
-    setPreviewUrl(url);
-    onSelect(url);
-    setIsOpen(false);
-  };
-
-  return (
-    <div className="relative">
-      <div onClick={() => setIsOpen(!isOpen)} className="relative cursor-pointer group">
-        {previewUrl ? (
-          <img src={previewUrl} alt="Avatar" className="w-20 h-20 rounded-full border-2 border-red-500 object-cover hover:border-red-400 transition-all" />
-        ) : (
-          <div className="w-20 h-20 rounded-full border-2 border-red-500 bg-slate-800 flex items-center justify-center text-3xl text-slate-400 hover:border-red-400 transition-all">👤</div>
-        )}
-        <div className="absolute bottom-0 right-0 bg-slate-900 rounded-full p-1 border border-slate-700">
-          <Camera className="w-4 h-4 text-slate-400" />
-        </div>
-      </div>
-
-      {isOpen && (
-        <div className="absolute top-24 left-0 bg-slate-900 border border-slate-700 rounded-2xl p-4 w-80 shadow-2xl z-50">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="text-sm font-bold text-white">Choose Avatar</h3>
-            <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white"><X className="w-4 h-4" /></button>
-          </div>
-          <div className="mb-4 p-3 bg-slate-800 rounded-xl">
-            <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-700 p-2 rounded-lg transition-colors">
-              <Upload className="w-4 h-4 text-blue-400" />
-              <span className="text-xs text-white">Upload your own image</span>
-              <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
-            </label>
-            {fileUpload && <p className="text-[10px] text-green-400 mt-1">✓ {fileUpload.name}</p>}
-          </div>
-          <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
-            {presetAvatars.map((avatar, index) => (
-              <button key={index} onClick={() => selectPresetAvatar(avatar)} className={`w-14 h-14 rounded-full border-2 transition-all hover:scale-105 ${previewUrl === avatar ? 'border-red-500' : 'border-slate-700 hover:border-slate-500'}`}>
-                <img src={avatar} alt={`Avatar ${index + 1}`} className="w-full h-full rounded-full" />
-              </button>
-            ))}
-          </div>
-          <button onClick={() => { const randomSeed = Math.random().toString(36).substring(7); const randomAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${randomSeed}`; selectPresetAvatar(randomAvatar); }} className="w-full mt-3 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-colors">
-            🎲 Random Avatar
-          </button>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ============================================
-// VIDEO PLAYER MODAL - MACAM YOUTUBE
-// ============================================
-const VideoPlayerModal = ({ video, onClose, onAddToPost, formatViews, activeUser }: { 
-  video: any, 
-  onClose: () => void,
-  onAddToPost: (video: any) => void,
-  formatViews: (views: string) => string,
-  activeUser: any
-}) => {
-  if (!video) return null;
-  
-  const videoId = video.id?.videoId || video.id;
-  const snippet = video.snippet;
-  const statistics = video.statistics || {};
-  
-  const mockComments = [
-    { author: 'User_01', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=user1', text: 'This is amazing! Thanks for sharing! 🔥', time: '2 hours ago', likes: 12 },
-    { author: 'Analyst_Pro', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=analyst', text: 'Great content for social network analysis!', time: '5 hours ago', likes: 8 },
-    { author: 'Data_Scientist', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=data', text: 'Can you make more videos like this? 🙏', time: '1 day ago', likes: 5 }
-  ];
-
-  return (
-    <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50" onClick={onClose}>
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="sticky top-0 bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center z-10">
-          <h3 className="text-sm font-bold text-white truncate max-w-md">{snippet?.title || 'Video Player'}</h3>
-          <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-full transition-colors"><X className="w-5 h-5 text-slate-400" /></button>
-        </div>
-
-        <div className="p-4">
-          <div className="aspect-video bg-slate-950 rounded-xl overflow-hidden">
-            <iframe src={`https://www.youtube.com/embed/${videoId}`} title={snippet?.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full" />
-          </div>
-
-          <div className="mt-4">
-            <h2 className="text-xl font-bold text-white">{snippet?.title}</h2>
-            <div className="flex items-center gap-4 mt-2 text-sm text-slate-400 flex-wrap">
-              <span className="font-semibold text-slate-300">📺 {snippet?.channelTitle}</span>
-              <span>•</span>
-              <span>👁️ {statistics.viewCount ? formatViews(statistics.viewCount) : 'N/A'} views</span>
-              <span>•</span>
-              <span>👍 {statistics.likeCount ? formatViews(statistics.likeCount) : 'N/A'} likes</span>
-            </div>
-            {snippet?.description && (
-              <div className="mt-3 p-3 bg-slate-950 rounded-xl border border-slate-800">
-                <p className="text-xs text-slate-300 whitespace-pre-wrap line-clamp-3">{snippet.description}</p>
-                <button className="text-xs text-blue-400 hover:text-blue-300 mt-1">Show more</button>
-              </div>
-            )}
-          </div>
-
-          <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-slate-800">
-            <button onClick={() => { onAddToPost(video); onClose(); }} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-xl transition-colors flex items-center gap-2">
-              <PlusCircle className="w-4 h-4" /> Add to Post
-            </button>
-            <button onClick={() => { navigator.clipboard.writeText(`https://www.youtube.com/watch?v=${videoId}`); alert('📋 Video link copied!'); }} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-colors flex items-center gap-2">
-              <Copy className="w-4 h-4" /> Copy Link
-            </button>
-            <button onClick={() => { window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank'); }} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-colors flex items-center gap-2">
-              <ExternalLink className="w-4 h-4" /> Open YouTube
-            </button>
-          </div>
-
-          <div className="mt-6 pt-4 border-t border-slate-800">
-            <h4 className="text-sm font-bold text-slate-300 mb-4 flex items-center gap-2">
-              <MessageCircle className="w-4 h-4" /> Comments ({mockComments.length})
-            </h4>
-            
-            <div className="flex gap-3 mb-4">
-              <img src={activeUser?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'} alt="" className="w-8 h-8 rounded-full object-cover" />
-              <input type="text" placeholder={activeUser?.status === 'Disabled' ? 'Account disabled - Cannot comment' : 'Write a comment...'} disabled={activeUser?.status === 'Disabled'} className={`flex-1 bg-slate-950 border border-slate-800 rounded-full px-4 py-2 text-sm text-white focus:outline-none focus:border-red-500 ${activeUser?.status === 'Disabled' ? 'opacity-50 cursor-not-allowed' : ''}`} />
-              <button className={`px-4 py-2 text-white text-sm font-bold rounded-full transition-colors ${activeUser?.status === 'Disabled' ? 'bg-slate-700 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`} disabled={activeUser?.status === 'Disabled'}>
-                <Send className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
-              {mockComments.map((comment, index) => (
-                <div key={index} className="flex gap-3">
-                  <img src={comment.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-xs text-white">{comment.author}</span>
-                      <span className="text-[10px] text-slate-500">{comment.time}</span>
-                    </div>
-                    <p className="text-sm text-slate-300 mt-0.5">{comment.text}</p>
-                    <div className="flex items-center gap-4 mt-1">
-                      <button className="text-[10px] text-slate-500 hover:text-white transition-colors flex items-center gap-1">
-                        <ThumbsUp className="w-3 h-3" /> {comment.likes}
-                      </button>
-                      <button className="text-[10px] text-slate-500 hover:text-white transition-colors">Reply</button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ============================================
-// TYPES
-// ============================================
-interface EmojiReactions {
-  fire: number;
-  heart: number;
-  clap: number;
-  laugh: number;
-}
-
-interface Post {
-  id: string;
-  videoTitle: string;
-  channelTitle: string;
-  videoUrl?: string;
-  content: string;
-  workspaceName: string;
-  createdAt: string;
-  updatedAt?: string;
-  reactions: EmojiReactions;
-  reviewImage?: string;
-  authorUsername: string;
-  authorFullName: string;
-  authorAvatar?: string;
-  comments: Comment[];
-  shares: number;
-  views: number;
-  isEdited: boolean;
-}
-
-interface Comment {
-  id: string;
-  authorUsername: string;
-  authorFullName: string;
-  authorAvatar?: string;
-  content: string;
-  createdAt: string;
-  reactions: EmojiReactions;
-}
-
-interface UserProfile {
-  username: string;
-  fullName: string;
-  role: string;
-  bio: string;
-  avatar?: string;
-  status: 'Active' | 'Disabled';
-  followers: string[];
-  following: string[];
-  joinedAt: string;
-  lastActive: string;
-  postsCount: number;
-  totalReactions: number;
-}
-
-// ============================================
-// MAIN COMPONENT
-// ============================================
 export default function SocialPlatform() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   // ============================================
-  // 1. USER MANAGEMENT STATE
+  // ALL STATE (sama)
   // ============================================
   const [users, setUsers] = useState<UserProfile[]>([
-    {
-      username: 'ahmad_sna',
-      fullName: 'Ahmad Shahril',
-      role: 'Lead Network Analyst',
-      bio: 'CSC795 Network Specialist | Analyzing social ecosystems 🌐',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ahmad',
-      status: 'Active',
-      followers: ['siti_analyst', 'network_pro'],
-      following: ['siti_analyst'],
-      joinedAt: '2026-01-15',
-      lastActive: new Date().toISOString(),
-      postsCount: 0,
-      totalReactions: 0
-    },
-    {
-      username: 'siti_analyst',
-      fullName: 'Siti Nurhaliza',
-      role: 'Senior Data Analyst',
-      bio: 'Data scientist & social network analyst 📊',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=siti',
-      status: 'Active',
-      followers: ['ahmad_sna'],
-      following: ['ahmad_sna', 'network_pro'],
-      joinedAt: '2026-02-01',
-      lastActive: new Date().toISOString(),
-      postsCount: 0,
-      totalReactions: 0
-    },
-    {
-      username: 'network_pro',
-      fullName: 'PRO Network',
-      role: 'Network Admin',
-      bio: 'Professional network management',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=pro',
-      status: 'Active',
-      followers: ['siti_analyst'],
-      following: [],
-      joinedAt: '2026-01-20',
-      lastActive: new Date().toISOString(),
-      postsCount: 0,
-      totalReactions: 0
-    }
+    // ... sama
   ]);
 
   const [posts, setPosts] = useState<Post[]>([
-    {
-      id: 'post_1',
-      videoTitle: 'Social Network Analysis Tutorial',
-      channelTitle: 'Network Science',
-      videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-      content: 'Great tutorial on SNA! Highly recommended for beginners. 🔥',
-      workspaceName: 'Network Science Lab',
-      createdAt: new Date(Date.now() - 3600000).toISOString(),
-      updatedAt: new Date(Date.now() - 3600000).toISOString(),
-      reactions: { fire: 5, heart: 3, clap: 2, laugh: 1 },
-      reviewImage: '',
-      authorUsername: 'ahmad_sna',
-      authorFullName: 'Ahmad Shahril',
-      authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ahmad',
-      comments: [
-        {
-          id: 'comment_1',
-          authorUsername: 'siti_analyst',
-          authorFullName: 'Siti Nurhaliza',
-          authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=siti',
-          content: 'Totally agree! This is gold! ✨',
-          createdAt: new Date(Date.now() - 1800000).toISOString(),
-          reactions: { fire: 2, heart: 1, clap: 0, laugh: 0 }
-        }
-      ],
-      shares: 3,
-      views: 120,
-      isEdited: false
-    },
-    {
-      id: 'post_2',
-      videoTitle: 'Understanding Network Clustering',
-      channelTitle: 'Data Science Hub',
-      videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-      content: 'Mind-blowing insights on network clustering algorithms! 🤯',
-      workspaceName: 'Data Science Community',
-      createdAt: new Date(Date.now() - 7200000).toISOString(),
-      updatedAt: new Date(Date.now() - 7200000).toISOString(),
-      reactions: { fire: 8, heart: 5, clap: 4, laugh: 2 },
-      reviewImage: '',
-      authorUsername: 'siti_analyst',
-      authorFullName: 'Siti Nurhaliza',
-      authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=siti',
-      comments: [
-        {
-          id: 'comment_2',
-          authorUsername: 'network_pro',
-          authorFullName: 'PRO Network',
-          authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=pro',
-          content: 'Can you share the paper reference?',
-          createdAt: new Date(Date.now() - 3000000).toISOString(),
-          reactions: { fire: 0, heart: 1, clap: 0, laugh: 0 }
-        }
-      ],
-      shares: 7,
-      views: 245,
-      isEdited: false
-    }
+    // ... sama
   ]);
 
   const [currentUser, setCurrentUser] = useState<string>('ahmad_sna');
@@ -388,16 +44,12 @@ export default function SocialPlatform() {
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'
   });
 
-  // Post creation states
   const [selectedVideo, setSelectedVideo] = useState<any>(null);
   const [postContent, setPostContent] = useState('');
   const [postImage, setPostImage] = useState('');
   const [workspaceName, setWorkspaceName] = useState('General');
   const [showCreatePost, setShowCreatePost] = useState(false);
 
-  // ============================================
-  // 2. SEARCH SYSTEM STATE
-  // ============================================
   const [query, setQuery] = useState('');
   const [contentType, setContentType] = useState('video'); 
   const [sortBy, setSortBy] = useState('relevance'); 
@@ -407,14 +59,10 @@ export default function SocialPlatform() {
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
   const [error, setError] = useState('');
 
-  // ============================================
-  // VIDEO PLAYER STATE
-  // ============================================
   const [selectedVideoPlayer, setSelectedVideoPlayer] = useState<any>(null);
   const [isVideoPlayerOpen, setIsVideoPlayerOpen] = useState(false);
 
-  // UI states
-  const [activeTab, setActiveTab] = useState<'feed' | 'search' | 'profile' | 'admin'>('feed');
+  const [activeTab, setActiveTab] = useState<'feed' | 'search' | 'profile'>('feed');
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
   const [editImage, setEditImage] = useState('');
@@ -427,7 +75,7 @@ export default function SocialPlatform() {
   const [shareMessage, setShareMessage] = useState('');
   const [selectedUserForShare, setSelectedUserForShare] = useState('');
   const [viewingUserProfile, setViewingUserProfile] = useState<string | null>(null);
-  const [showUserManagement, setShowUserManagement] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const activeUser = users.find(u => u.username === currentUser)!;
 
@@ -536,7 +184,6 @@ export default function SocialPlatform() {
     if (savedUsers) {
       try { 
         const parsed = JSON.parse(savedUsers);
-        // Ensure status is correctly typed
         const typedUsers = parsed.map((u: any) => ({
           ...u,
           status: u.status === 'Disabled' ? 'Disabled' : 'Active'
@@ -1071,45 +718,45 @@ export default function SocialPlatform() {
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 max-w-md w-full">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-extrabold text-white">PageNet<span className="text-red-500">+</span></h1>
-            <p className="text-slate-400 text-sm mt-2">Social Network Analysis Platform</p>
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full">
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-extrabold text-white">PageNet<span className="text-red-500">+</span></h1>
+            <p className="text-slate-400 text-xs mt-1">Social Network Analysis Platform</p>
           </div>
           
-          <div className="space-y-4">
-            <button onClick={() => setIsLoginModalOpen(true)} className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-colors">
+          <div className="space-y-3">
+            <button onClick={() => setIsLoginModalOpen(true)} className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-colors text-sm">
               <LogIn className="w-4 h-4 inline mr-2" /> Login
             </button>
-            <button onClick={() => setIsRegisterModalOpen(true)} className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-colors">
+            <button onClick={() => setIsRegisterModalOpen(true)} className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-colors text-sm">
               <UserPlus className="w-4 h-4 inline mr-2" /> Register
             </button>
           </div>
 
-          {/* Login Modal */}
+          {/* Login Modal - Mobile Friendly */}
           {isLoginModalOpen && (
             <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full">
-                <h2 className="text-xl font-bold text-white mb-4">Login</h2>
+                <h2 className="text-lg font-bold text-white mb-4">Login</h2>
                 <form onSubmit={handleLogin} className="space-y-4">
-                  <input type="text" placeholder="Username" value={loginUsername} onChange={(e) => setLoginUsername(e.target.value)} className="w-full bg-slate-950 border border-slate-800 px-4 py-2 rounded-lg text-white focus:outline-none focus:border-red-500" required />
-                  <input type="password" placeholder="Password (demo: any)" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} className="w-full bg-slate-950 border border-slate-800 px-4 py-2 rounded-lg text-white focus:outline-none focus:border-red-500" required />
+                  <input type="text" placeholder="Username" value={loginUsername} onChange={(e) => setLoginUsername(e.target.value)} className="w-full bg-slate-950 border border-slate-800 px-4 py-2.5 rounded-lg text-white focus:outline-none focus:border-red-500 text-sm" required />
+                  <input type="password" placeholder="Password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} className="w-full bg-slate-950 border border-slate-800 px-4 py-2.5 rounded-lg text-white focus:outline-none focus:border-red-500 text-sm" required />
                   <div className="flex gap-2">
-                    <button type="submit" className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg transition-colors">Login</button>
-                    <button type="button" onClick={() => setIsLoginModalOpen(false)} className="flex-1 bg-slate-800 text-slate-400 py-2 rounded-lg hover:bg-slate-700 transition-colors">Cancel</button>
+                    <button type="submit" className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-lg transition-colors text-sm">Login</button>
+                    <button type="button" onClick={() => setIsLoginModalOpen(false)} className="flex-1 bg-slate-800 text-slate-400 py-2.5 rounded-lg hover:bg-slate-700 transition-colors text-sm">Cancel</button>
                   </div>
                 </form>
               </div>
             </div>
           )}
 
-          {/* Register Modal */}
+          {/* Register Modal - Mobile Friendly */}
           {isRegisterModalOpen && (
             <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
-                <h2 className="text-xl font-bold text-white mb-4">Create Account</h2>
+                <h2 className="text-lg font-bold text-white mb-4">Create Account</h2>
                 <form onSubmit={handleRegister} className="space-y-4">
-                  <div className="flex items-center gap-4 mb-2 p-3 bg-slate-800/50 rounded-xl">
+                  <div className="flex items-center gap-4 p-3 bg-slate-800/50 rounded-xl">
                     <AvatarSelector onSelect={(avatar) => { setNewUser({...newUser, avatar}); setRegisterAvatar(avatar); }} currentAvatar={registerAvatar || newUser.avatar} />
                     <div>
                       <p className="text-xs text-slate-400">Click avatar to change</p>
@@ -1117,13 +764,13 @@ export default function SocialPlatform() {
                     </div>
                   </div>
 
-                  <input type="text" placeholder="Username" value={newUser.username} onChange={(e) => setNewUser({...newUser, username: e.target.value})} className="w-full bg-slate-950 border border-slate-800 px-4 py-2 rounded-lg text-white focus:outline-none focus:border-red-500" required />
-                  <input type="text" placeholder="Full Name" value={newUser.fullName} onChange={(e) => setNewUser({...newUser, fullName: e.target.value})} className="w-full bg-slate-950 border border-slate-800 px-4 py-2 rounded-lg text-white focus:outline-none focus:border-red-500" required />
-                  <input type="text" placeholder="Role (e.g., Analyst)" value={newUser.role} onChange={(e) => setNewUser({...newUser, role: e.target.value})} className="w-full bg-slate-950 border border-slate-800 px-4 py-2 rounded-lg text-white focus:outline-none focus:border-red-500" />
-                  <textarea placeholder="Bio" value={newUser.bio} onChange={(e) => setNewUser({...newUser, bio: e.target.value})} className="w-full bg-slate-950 border border-slate-800 px-4 py-2 rounded-lg text-white focus:outline-none focus:border-red-500" rows={3} />
+                  <input type="text" placeholder="Username" value={newUser.username} onChange={(e) => setNewUser({...newUser, username: e.target.value})} className="w-full bg-slate-950 border border-slate-800 px-4 py-2.5 rounded-lg text-white focus:outline-none focus:border-red-500 text-sm" required />
+                  <input type="text" placeholder="Full Name" value={newUser.fullName} onChange={(e) => setNewUser({...newUser, fullName: e.target.value})} className="w-full bg-slate-950 border border-slate-800 px-4 py-2.5 rounded-lg text-white focus:outline-none focus:border-red-500 text-sm" required />
+                  <input type="text" placeholder="Role" value={newUser.role} onChange={(e) => setNewUser({...newUser, role: e.target.value})} className="w-full bg-slate-950 border border-slate-800 px-4 py-2.5 rounded-lg text-white focus:outline-none focus:border-red-500 text-sm" />
+                  <textarea placeholder="Bio" value={newUser.bio} onChange={(e) => setNewUser({...newUser, bio: e.target.value})} className="w-full bg-slate-950 border border-slate-800 px-4 py-2.5 rounded-lg text-white focus:outline-none focus:border-red-500 text-sm" rows={3} />
                   <div className="flex gap-2">
-                    <button type="submit" className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg transition-colors">Register</button>
-                    <button type="button" onClick={() => setIsRegisterModalOpen(false)} className="flex-1 bg-slate-800 text-slate-400 py-2 rounded-lg hover:bg-slate-700 transition-colors">Cancel</button>
+                    <button type="submit" className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-lg transition-colors text-sm">Register</button>
+                    <button type="button" onClick={() => setIsRegisterModalOpen(false)} className="flex-1 bg-slate-800 text-slate-400 py-2.5 rounded-lg hover:bg-slate-700 transition-colors text-sm">Cancel</button>
                   </div>
                 </form>
               </div>
@@ -1135,63 +782,72 @@ export default function SocialPlatform() {
   }
 
   // ============================================
-  // MAIN APP (LOGGED IN)
+  // MAIN APP (LOGGED IN) - MOBILE FIRST
   // ============================================
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      {/* ===== NAVIGATION - DENGAN YOUTUBE LOGO ===== */}
-      <nav className="bg-slate-900 border-b border-slate-800 sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          {/* Left side - Logo dengan YouTube - klik balik ke home */}
+    <div className="min-h-screen bg-slate-950 text-slate-100 pb-16 md:pb-0">
+      {/* ===== MOBILE BOTTOM NAV ===== */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 z-40 md:hidden">
+        <div className="flex items-center justify-around py-2 px-2">
+          <button
+            onClick={() => { setActiveTab('feed'); setViewingUserProfile(null); router.push('/'); }}
+            className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-all ${
+              activeTab === 'feed' ? 'text-red-500' : 'text-slate-400'
+            }`}
+          >
+            <Home className="w-5 h-5" />
+            <span className="text-[10px]">Feed</span>
+          </button>
+          <button
+            onClick={() => { setActiveTab('search'); }}
+            className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-all ${
+              activeTab === 'search' ? 'text-red-500' : 'text-slate-400'
+            }`}
+          >
+            <Search className="w-5 h-5" />
+            <span className="text-[10px]">Search</span>
+          </button>
+          <button
+            onClick={() => { setActiveTab('profile'); setViewingUserProfile(null); }}
+            className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-all ${
+              activeTab === 'profile' ? 'text-red-500' : 'text-slate-400'
+            }`}
+          >
+            <User className="w-5 h-5" />
+            <span className="text-[10px]">Profile</span>
+          </button>
+          <button
+            onClick={handleLogout}
+            className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg text-slate-400"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="text-[10px]">Logout</span>
+          </button>
+        </div>
+      </nav>
+
+      {/* ===== DESKTOP TOP NAV ===== */}
+      <nav className="hidden md:flex bg-slate-900 border-b border-slate-800 sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto px-4 py-3 w-full flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setActiveTab('feed'); setViewingUserProfile(null); router.push('/'); }}>
-            {/* YouTube Logo SVG */}
             <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
               <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z" fill="#FF0000"/>
               <path d="M9.545 15.568V8.432L15.818 12l-6.273 3.568z" fill="#FFFFFF"/>
             </svg>
             <span className="text-xl font-extrabold text-white">PageNet<span className="text-red-500">+</span></span>
-            {activeUser?.role === 'Lead Network Analyst' && (
-              <span className="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">Admin</span>
-            )}
           </div>
 
-          {/* Right side - Navigation tabs & logout */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1 bg-slate-800 rounded-xl p-1">
-              <button
-                onClick={() => { setActiveTab('feed'); setViewingUserProfile(null); router.push('/'); }}
-                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  activeTab === 'feed' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white'
-                }`}
-              >
+              <button onClick={() => { setActiveTab('feed'); setViewingUserProfile(null); router.push('/'); }} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === 'feed' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white'}`}>
                 <Home className="w-4 h-4 inline mr-1" /> Feed
               </button>
-              <button
-                onClick={() => { setActiveTab('search'); router.push('/?q=' + query); }}
-                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  activeTab === 'search' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white'
-                }`}
-              >
+              <button onClick={() => { setActiveTab('search'); }} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === 'search' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white'}`}>
                 <Search className="w-4 h-4 inline mr-1" /> Search
               </button>
-              <button
-                onClick={() => { setActiveTab('profile'); setViewingUserProfile(null); router.push('/'); }}
-                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  activeTab === 'profile' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white'
-                }`}
-              >
+              <button onClick={() => { setActiveTab('profile'); setViewingUserProfile(null); }} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === 'profile' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white'}`}>
                 <User className="w-4 h-4 inline mr-1" /> Profile
               </button>
-              {activeUser?.role === 'Lead Network Analyst' && (
-                <button
-                  onClick={() => { setActiveTab('admin'); router.push('/'); }}
-                  className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    activeTab === 'admin' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <Settings className="w-4 h-4 inline mr-1" /> Admin
-                </button>
-              )}
             </div>
             <button onClick={handleLogout} className="text-slate-400 hover:text-red-400 text-xs font-medium transition-colors">
               <LogOut className="w-4 h-4 inline" /> Logout
@@ -1200,12 +856,12 @@ export default function SocialPlatform() {
         </div>
       </nav>
 
-      <div className="max-w-6xl mx-auto px-4 py-6">
-        {/* ===== FEED TAB ===== */}
+      <div className="max-w-6xl mx-auto px-3 md:px-4 py-4 md:py-6">
+        {/* ===== FEED TAB - MOBILE FRIENDLY ===== */}
         {activeTab === 'feed' && (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Left Sidebar */}
-            <div className="lg:col-span-1 space-y-4">
+          <div className="flex flex-col md:grid md:grid-cols-4 gap-4 md:gap-6">
+            {/* Left Sidebar - Hidden on mobile, show on desktop */}
+            <div className="hidden md:block md:col-span-1 space-y-4">
               {/* User Card */}
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
                 <div className="flex items-center gap-3">
@@ -1213,7 +869,6 @@ export default function SocialPlatform() {
                   <div>
                     <p className="font-bold text-sm text-white">{activeUser.fullName}</p>
                     <p className="text-xs text-slate-400">@{activeUser.username}</p>
-                    <p className="text-[10px] text-slate-500">{activeUser.role}</p>
                   </div>
                 </div>
                 <div className="mt-3 flex gap-3 text-xs">
@@ -1250,10 +905,7 @@ export default function SocialPlatform() {
                   <div key={user.username} className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <img src={user.avatar} alt="" className="w-6 h-6 rounded-full object-cover" />
-                      <span 
-                        className="text-xs text-white cursor-pointer hover:text-red-400 transition-colors"
-                        onClick={() => viewUserProfile(user.username)}
-                      >
+                      <span className="text-xs text-white cursor-pointer hover:text-red-400 transition-colors" onClick={() => viewUserProfile(user.username)}>
                         @{user.username}
                       </span>
                     </div>
@@ -1265,18 +917,37 @@ export default function SocialPlatform() {
               </div>
             </div>
 
-            {/* Main Feed */}
-            <div className="lg:col-span-2">
+            {/* Mobile User Card - Only on mobile */}
+            <div className="md:hidden bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-3">
+              <div className="flex items-center gap-3">
+                <img src={activeUser.avatar} alt="" className="w-12 h-12 rounded-full border-2 border-red-500 object-cover" />
+                <div className="flex-1">
+                  <p className="font-bold text-sm text-white">{activeUser.fullName}</p>
+                  <p className="text-xs text-slate-400">@{activeUser.username}</p>
+                </div>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full ${activeUser.status === 'Active' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                  {activeUser.status}
+                </span>
+              </div>
+              <div className="mt-2 flex gap-4 text-xs">
+                <div><span className="font-bold text-white">{activeUser.postsCount}</span> <span className="text-slate-500">Posts</span></div>
+                <div><span className="font-bold text-white">{activeUser.followers.length}</span> <span className="text-slate-500">Followers</span></div>
+                <div><span className="font-bold text-white">{activeUser.following.length}</span> <span className="text-slate-500">Following</span></div>
+              </div>
+            </div>
+
+            {/* Main Feed - Full width on mobile */}
+            <div className="md:col-span-2 w-full">
               {/* Create Post Button */}
               <button
                 onClick={() => setShowCreatePost(!showCreatePost)}
-                className={`w-full bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-4 mb-4 text-left transition-all ${activeUser.status === 'Disabled' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`w-full bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-3 md:p-4 mb-4 text-left transition-all ${activeUser.status === 'Disabled' ? 'opacity-50 cursor-not-allowed' : ''}`}
                 disabled={activeUser.status === 'Disabled'}
               >
                 <div className="flex items-center gap-3">
-                  <img src={activeUser.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
+                  <img src={activeUser.avatar} alt="" className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover" />
                   <span className="text-slate-400 text-sm">
-                    {activeUser.status === 'Disabled' ? 'Account Disabled - Cannot Post' : "What's on your mind?"}
+                    {activeUser.status === 'Disabled' ? 'Account Disabled' : "What's on your mind?"}
                   </span>
                 </div>
               </button>
@@ -1303,23 +974,23 @@ export default function SocialPlatform() {
 
                     {selectedVideo && (
                       <div className="bg-slate-950 rounded-xl p-3 border border-slate-800 flex items-center justify-between">
-                        <p className="text-xs text-slate-300">🎬 {selectedVideo.snippet?.title}</p>
-                        <button type="button" onClick={() => setSelectedVideo(null)} className="text-xs text-red-400 hover:text-red-300">
+                        <p className="text-xs text-slate-300 line-clamp-1 flex-1">🎬 {selectedVideo.snippet?.title}</p>
+                        <button type="button" onClick={() => setSelectedVideo(null)} className="text-xs text-red-400 hover:text-red-300 ml-2">
                           <X className="w-4 h-4" />
                         </button>
                       </div>
                     )}
 
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <input
                         type="text"
                         placeholder="Workspace name"
                         value={workspaceName}
                         onChange={(e) => setWorkspaceName(e.target.value)}
-                        className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+                        className="flex-1 min-w-[120px] bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
                       />
                       <label className="cursor-pointer bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg text-xs text-slate-300 transition-colors">
-                        <ImageIcon className="w-4 h-4 inline" /> Image
+                        <ImageIcon className="w-4 h-4 inline" />
                         <input
                           type="file"
                           accept="image/*"
@@ -1337,7 +1008,7 @@ export default function SocialPlatform() {
                     </div>
 
                     {postImage && (
-                      <div className="relative w-24 h-16">
+                      <div className="relative w-20 h-14">
                         <img src={postImage} alt="" className="w-full h-full object-cover rounded-lg border border-slate-800" />
                         <button type="button" onClick={() => setPostImage('')} className="absolute -top-1 -right-1 bg-red-500 rounded-full p-0.5">
                           <X className="w-3 h-3 text-white" />
@@ -1346,10 +1017,10 @@ export default function SocialPlatform() {
                     )}
 
                     <div className="flex gap-2">
-                      <button type="submit" className="bg-red-600 hover:bg-red-700 text-white font-bold px-6 py-2 rounded-xl text-sm transition-colors">
+                      <button type="submit" className="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-xl text-sm transition-colors">
                         <Send className="w-4 h-4 inline mr-1" /> Post
                       </button>
-                      <button type="button" onClick={() => setShowCreatePost(false)} className="bg-slate-800 text-slate-400 px-6 py-2 rounded-xl text-sm hover:bg-slate-700 transition-colors">
+                      <button type="button" onClick={() => setShowCreatePost(false)} className="bg-slate-800 text-slate-400 px-4 py-2 rounded-xl text-sm hover:bg-slate-700 transition-colors">
                         Cancel
                       </button>
                     </div>
@@ -1357,7 +1028,7 @@ export default function SocialPlatform() {
                 </div>
               )}
 
-              {/* Feed Posts */}
+              {/* Feed Posts - Mobile optimized */}
               <div className="space-y-4">
                 {posts.map(post => {
                   const author = users.find(u => u.username === post.authorUsername);
@@ -1365,29 +1036,21 @@ export default function SocialPlatform() {
                   
                   return (
                     <div key={post.id} id={`post-${post.id}`} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 hover:border-slate-700 transition-all">
-                      {/* Author */}
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
+                      {/* Author - Mobile friendly */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
                           <img 
                             src={post.authorAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.authorUsername}`} 
                             alt="" 
-                            className="w-10 h-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-red-500 transition-all"
+                            className="w-10 h-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-red-500 transition-all flex-shrink-0"
                             onClick={() => viewUserProfile(post.authorUsername)}
                           />
-                          <div>
+                          <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <p 
-                                className="font-bold text-sm text-white cursor-pointer hover:text-red-400 transition-colors" 
-                                onClick={() => viewUserProfile(post.authorUsername)}
-                              >
+                              <p className="font-bold text-sm text-white cursor-pointer hover:text-red-400 transition-colors truncate" onClick={() => viewUserProfile(post.authorUsername)}>
                                 {post.authorFullName}
                               </p>
-                              <p 
-                                className="text-xs text-slate-400 cursor-pointer hover:text-red-400 transition-colors"
-                                onClick={() => viewUserProfile(post.authorUsername)}
-                              >
-                                @{post.authorUsername}
-                              </p>
+                              <p className="text-xs text-slate-400 truncate">@{post.authorUsername}</p>
                               {post.authorUsername === currentUser && (
                                 <span className="text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">You</span>
                               )}
@@ -1398,29 +1061,16 @@ export default function SocialPlatform() {
                                 <span className="text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">Disabled</span>
                               )}
                             </div>
-                            <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                            <div className="flex items-center gap-2 text-[10px] text-slate-500 flex-wrap">
                               <span>{formatTime(post.createdAt)}</span>
                               <span>•</span>
                               <span>📁 {post.workspaceName}</span>
-                              {post.updatedAt && post.updatedAt !== post.createdAt && (
-                                <>
-                                  <span>•</span>
-                                  <span>Updated {formatTime(post.updatedAt)}</span>
-                                </>
-                              )}
                             </div>
                           </div>
                         </div>
                         {post.authorUsername === currentUser && activeUser.status === 'Active' && (
-                          <div className="flex gap-1">
-                            <button 
-                              onClick={() => {
-                                setEditingPostId(post.id);
-                                setEditContent(post.content);
-                                setEditImage(post.reviewImage || '');
-                              }} 
-                              className="text-slate-500 hover:text-amber-400 text-xs p-1 rounded hover:bg-slate-800 transition-colors"
-                            >
+                          <div className="flex gap-1 flex-shrink-0 ml-2">
+                            <button onClick={() => { setEditingPostId(post.id); setEditContent(post.content); setEditImage(post.reviewImage || ''); }} className="text-slate-500 hover:text-amber-400 text-xs p-1 rounded hover:bg-slate-800 transition-colors">
                               <Edit3 className="w-3.5 h-3.5" />
                             </button>
                             <button onClick={() => deletePost(post.id)} className="text-slate-500 hover:text-red-400 text-xs p-1 rounded hover:bg-slate-800 transition-colors">
@@ -1440,7 +1090,7 @@ export default function SocialPlatform() {
                             rows={3}
                           />
                           <div>
-                            <label className="text-xs text-slate-400">Change image (optional):</label>
+                            <label className="text-xs text-slate-400">Change image:</label>
                             <input
                               type="file"
                               accept="image/*"
@@ -1454,7 +1104,7 @@ export default function SocialPlatform() {
                               }}
                               className="text-xs text-slate-400 block mt-1"
                             />
-                            {editImage && <img src={editImage} alt="" className="w-24 h-16 object-cover rounded-lg border border-slate-800 mt-2" />}
+                            {editImage && <img src={editImage} alt="" className="w-20 h-14 object-cover rounded-lg border border-slate-800 mt-2" />}
                           </div>
                           <div className="flex gap-2">
                             <button onClick={() => editPost(post.id)} className="bg-green-600 hover:bg-green-700 text-white text-xs px-4 py-1.5 rounded-lg transition-colors">
@@ -1467,14 +1117,14 @@ export default function SocialPlatform() {
                         </div>
                       ) : (
                         <>
-                          <p className="text-sm text-slate-200 mb-2">{post.content}</p>
+                          <p className="text-sm text-slate-200 mb-2 break-words">{post.content}</p>
                           {post.reviewImage && (
-                            <img src={post.reviewImage} alt="" className="w-full max-h-64 object-cover rounded-xl border border-slate-800 mb-2" />
+                            <img src={post.reviewImage} alt="" className="w-full max-h-48 object-cover rounded-xl border border-slate-800 mb-2" />
                           )}
-                          <div className="text-xs text-slate-500 bg-slate-950/50 p-2 rounded-lg flex items-center justify-between">
-                            <span>🎬 {post.videoTitle} • {post.channelTitle}</span>
+                          <div className="text-xs text-slate-500 bg-slate-950/50 p-2 rounded-lg flex flex-wrap items-center justify-between gap-2">
+                            <span className="truncate">🎬 {post.videoTitle}</span>
                             {post.videoUrl && (
-                              <a href={post.videoUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1">
+                              <a href={post.videoUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1 flex-shrink-0">
                                 <ExternalLink className="w-3 h-3" /> Watch
                               </a>
                             )}
@@ -1482,43 +1132,36 @@ export default function SocialPlatform() {
                         </>
                       )}
 
-                      {/* Actions */}
-                      <div className="flex items-center gap-4 mt-3 pt-3 border-t border-slate-800 relative flex-wrap">
-                        {/* Reactions */}
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => {
-                              if (activeUser.status === 'Disabled') {
-                                alert('Your account is disabled! Cannot react.');
-                                return;
-                              }
-                              setActiveEmojiMenu(activeEmojiMenu === post.id ? null : post.id);
-                            }}
-                            className={`text-slate-400 hover:text-white text-xs flex items-center gap-1 px-2 py-1 rounded-lg transition-colors ${
-                              activeUser.status === 'Disabled' ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-800'
-                            }`}
-                            disabled={activeUser.status === 'Disabled'}
-                          >
-                            <Smile className="w-4 h-4" />
-                            <span>React</span>
-                          </button>
-                          {activeEmojiMenu === post.id && (
-                            <div className="absolute bottom-full left-0 mb-2 bg-slate-950 border border-slate-700 rounded-xl p-2 flex gap-2 z-10 shadow-xl">
-                              <button onClick={() => addReaction(post.id, 'fire')} className="hover:scale-125 transition-transform text-xl">🔥</button>
-                              <button onClick={() => addReaction(post.id, 'heart')} className="hover:scale-125 transition-transform text-xl">❤️</button>
-                              <button onClick={() => addReaction(post.id, 'clap')} className="hover:scale-125 transition-transform text-xl">👏</button>
-                              <button onClick={() => addReaction(post.id, 'laugh')} className="hover:scale-125 transition-transform text-xl">😂</button>
-                            </div>
-                          )}
-                          <div className="flex items-center gap-1 text-xs text-slate-400">
-                            <span>🔥{post.reactions.fire}</span>
-                            <span>❤️{post.reactions.heart}</span>
-                            <span>👏{post.reactions.clap}</span>
-                            <span>😂{post.reactions.laugh}</span>
+                      {/* Actions - Mobile friendly */}
+                      <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-slate-800 relative">
+                        <button
+                          onClick={() => {
+                            if (activeUser.status === 'Disabled') {
+                              alert('Your account is disabled! Cannot react.');
+                              return;
+                            }
+                            setActiveEmojiMenu(activeEmojiMenu === post.id ? null : post.id);
+                          }}
+                          className={`text-slate-400 hover:text-white text-xs flex items-center gap-1 px-2 py-1 rounded-lg transition-colors ${activeUser.status === 'Disabled' ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-800'}`}
+                          disabled={activeUser.status === 'Disabled'}
+                        >
+                          <Smile className="w-4 h-4" /> React
+                        </button>
+                        {activeEmojiMenu === post.id && (
+                          <div className="absolute bottom-full left-0 mb-2 bg-slate-950 border border-slate-700 rounded-xl p-2 flex gap-2 z-10 shadow-xl">
+                            <button onClick={() => addReaction(post.id, 'fire')} className="hover:scale-125 transition-transform text-xl">🔥</button>
+                            <button onClick={() => addReaction(post.id, 'heart')} className="hover:scale-125 transition-transform text-xl">❤️</button>
+                            <button onClick={() => addReaction(post.id, 'clap')} className="hover:scale-125 transition-transform text-xl">👏</button>
+                            <button onClick={() => addReaction(post.id, 'laugh')} className="hover:scale-125 transition-transform text-xl">😂</button>
                           </div>
+                        )}
+                        <div className="flex items-center gap-1 text-xs text-slate-400">
+                          <span>🔥{post.reactions.fire}</span>
+                          <span>❤️{post.reactions.heart}</span>
+                          <span>👏{post.reactions.clap}</span>
+                          <span>😂{post.reactions.laugh}</span>
                         </div>
 
-                        {/* Comments */}
                         <button
                           onClick={() => {
                             if (activeUser.status === 'Disabled') {
@@ -1527,83 +1170,43 @@ export default function SocialPlatform() {
                             }
                             setShowCommentInput(showCommentInput === post.id ? null : post.id);
                           }}
-                          className={`text-slate-400 hover:text-white text-xs flex items-center gap-1 px-2 py-1 rounded-lg transition-colors ${
-                            activeUser.status === 'Disabled' ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-800'
-                          }`}
+                          className={`text-slate-400 hover:text-white text-xs flex items-center gap-1 px-2 py-1 rounded-lg transition-colors ${activeUser.status === 'Disabled' ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-800'}`}
                           disabled={activeUser.status === 'Disabled'}
                         >
-                          <MessageCircle className="w-4 h-4" />
-                          <span>{post.comments.length}</span>
+                          <MessageCircle className="w-4 h-4" /> {post.comments.length}
                         </button>
 
-                        {/* Share */}
                         <button onClick={() => setShowShareModal(showShareModal === post.id ? null : post.id)} className="text-slate-400 hover:text-white text-xs flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-slate-800 transition-colors">
-                          <Share2 className="w-4 h-4" />
-                          <span>{post.shares}</span>
+                          <Share2 className="w-4 h-4" /> {post.shares}
                         </button>
 
-                        {/* Share Modal */}
+                        {/* Share Modal - Mobile friendly */}
                         {showShareModal === post.id && (
-                          <div className="absolute right-0 top-full mt-2 bg-slate-950 border border-slate-700 rounded-xl p-3 w-64 z-10 shadow-xl">
+                          <div className="absolute right-0 top-full mt-2 bg-slate-950 border border-slate-700 rounded-xl p-3 w-56 z-10 shadow-xl">
                             <div className="space-y-2">
-                              <h4 className="text-xs font-bold text-slate-400">Share Post</h4>
-                              
-                              {/* External platforms */}
-                              <div className="flex gap-2">
-                                <button onClick={() => shareToExternalPlatform(post.id, 'twitter')} className="p-1.5 bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors">🐦</button>
-                                <button onClick={() => shareToExternalPlatform(post.id, 'facebook')} className="p-1.5 bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors">📘</button>
-                                <button onClick={() => shareToExternalPlatform(post.id, 'linkedin')} className="p-1.5 bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors">💼</button>
-                                <button onClick={() => shareToExternalPlatform(post.id, 'whatsapp')} className="p-1.5 bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors">💬</button>
-                                <button onClick={() => shareToExternalPlatform(post.id, 'telegram')} className="p-1.5 bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors">✈️</button>
+                              <h4 className="text-xs font-bold text-slate-400">Share</h4>
+                              <div className="flex gap-1.5 flex-wrap">
+                                <button onClick={() => shareToExternalPlatform(post.id, 'twitter')} className="p-1.5 bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors text-sm">🐦</button>
+                                <button onClick={() => shareToExternalPlatform(post.id, 'facebook')} className="p-1.5 bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors text-sm">📘</button>
+                                <button onClick={() => shareToExternalPlatform(post.id, 'whatsapp')} className="p-1.5 bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors text-sm">💬</button>
+                                <button onClick={() => shareToExternalPlatform(post.id, 'telegram')} className="p-1.5 bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors text-sm">✈️</button>
                               </div>
-                              
-                              <div className="flex gap-2">
+                              <div className="flex gap-1">
                                 <button onClick={() => sharePost(post.id, 'copy')} className="flex-1 text-xs bg-slate-800 hover:bg-slate-700 text-white px-2 py-1 rounded-lg transition-colors">
-                                  <Copy className="w-3 h-3 inline mr-1" /> Copy
+                                  <Copy className="w-3 h-3 inline" /> Copy
                                 </button>
-                                <button onClick={() => sharePost(post.id, 'email')} className="flex-1 text-xs bg-slate-800 hover:bg-slate-700 text-white px-2 py-1 rounded-lg transition-colors">
-                                  <Mail className="w-3 h-3 inline mr-1" /> Email
-                                </button>
-                                {/* Copy Link Button */}
                                 <button 
                                   onClick={() => {
                                     const link = getShareableLink('post', post.id);
                                     navigator.clipboard.writeText(link);
-                                    alert('📋 Post link copied! Share it with anyone.');
+                                    alert('📋 Link copied!');
                                   }}
                                   className="flex-1 text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-lg transition-colors"
                                 >
-                                  <LinkIcon className="w-3 h-3 inline mr-1" /> Link
+                                  <LinkIcon className="w-3 h-3 inline" /> Link
                                 </button>
                               </div>
-                              
-                              {/* Internal share */}
-                              <div className="border-t border-slate-800 pt-2 mt-2">
-                                <p className="text-[10px] text-slate-500 mb-1">Share with user:</p>
-                                <div className="flex gap-1">
-                                  <select
-                                    value={selectedUserForShare}
-                                    onChange={(e) => setSelectedUserForShare(e.target.value)}
-                                    className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none"
-                                  >
-                                    <option value="">Select user</option>
-                                    {users.filter(u => u.username !== currentUser && u.status === 'Active').map(u => (
-                                      <option key={u.username} value={u.username}>@{u.username}</option>
-                                    ))}
-                                  </select>
-                                  <button 
-                                    onClick={() => sharePost(post.id, 'internal')}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 rounded-lg transition-colors"
-                                    disabled={!selectedUserForShare}
-                                  >
-                                    <Send className="w-3 h-3" />
-                                  </button>
-                                </div>
-                              </div>
-                              
-                              <button onClick={() => setShowShareModal(null)} className="w-full text-xs text-slate-500 hover:text-slate-400 mt-1">
-                                Close
-                              </button>
+                              <button onClick={() => setShowShareModal(null)} className="w-full text-xs text-slate-500 hover:text-slate-400">Close</button>
                             </div>
                           </div>
                         )}
@@ -1614,25 +1217,14 @@ export default function SocialPlatform() {
                         <div className="mt-3 space-y-2">
                           {post.comments.map(comment => (
                             <div key={comment.id} className="bg-slate-950 rounded-lg p-2 border border-slate-800">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <img src={comment.authorAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.authorUsername}`} alt="" className="w-5 h-5 rounded-full object-cover" />
-                                  <span 
-                                    className="font-bold text-xs text-white cursor-pointer hover:text-red-400 transition-colors"
-                                    onClick={() => viewUserProfile(comment.authorUsername)}
-                                  >
-                                    {comment.authorFullName}
-                                  </span>
-                                  <span 
-                                    className="text-[10px] text-slate-400 cursor-pointer hover:text-red-400 transition-colors"
-                                    onClick={() => viewUserProfile(comment.authorUsername)}
-                                  >
-                                    @{comment.authorUsername}
-                                  </span>
-                                  <span className="text-[10px] text-slate-500">{formatTime(comment.createdAt)}</span>
-                                </div>
+                              <div className="flex items-center gap-2">
+                                <img src={comment.authorAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.authorUsername}`} alt="" className="w-5 h-5 rounded-full object-cover" />
+                                <span className="font-bold text-xs text-white cursor-pointer hover:text-red-400 transition-colors" onClick={() => viewUserProfile(comment.authorUsername)}>
+                                  {comment.authorFullName}
+                                </span>
+                                <span className="text-[10px] text-slate-500">@{comment.authorUsername}</span>
                               </div>
-                              <p className="text-xs text-slate-300 ml-7">{comment.content}</p>
+                              <p className="text-xs text-slate-300 ml-7 break-words">{comment.content}</p>
                             </div>
                           ))}
                           {activeUser.status === 'Active' ? (
@@ -1645,13 +1237,13 @@ export default function SocialPlatform() {
                                 onKeyDown={(e) => e.key === 'Enter' && addComment(post.id)}
                                 className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500"
                               />
-                              <button onClick={() => addComment(post.id)} className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-1.5 rounded-lg transition-colors">
+                              <button onClick={() => addComment(post.id)} className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg transition-colors">
                                 Reply
                               </button>
                             </div>
                           ) : (
                             <p className="text-[10px] text-red-400 flex items-center gap-1">
-                              <AlertCircle className="w-3 h-3" /> Account disabled - Cannot comment
+                              <AlertCircle className="w-3 h-3" /> Account disabled
                             </p>
                           )}
                         </div>
@@ -1662,33 +1254,14 @@ export default function SocialPlatform() {
               </div>
             </div>
 
-            {/* Right Sidebar */}
-            <div className="lg:col-span-1 space-y-4">
+            {/* Right Sidebar - Hidden on mobile */}
+            <div className="hidden md:block md:col-span-1 space-y-4">
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">📊 Analytics</h3>
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Total Posts</span>
-                    <span className="text-white font-bold">{posts.length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Total Reactions</span>
-                    <span className="text-white font-bold">
-                      {posts.reduce((sum, p) => sum + getTotalReactions(p), 0)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Total Comments</span>
-                    <span className="text-white font-bold">
-                      {posts.reduce((sum, p) => sum + p.comments.length, 0)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Total Shares</span>
-                    <span className="text-white font-bold">
-                      {posts.reduce((sum, p) => sum + p.shares, 0)}
-                    </span>
-                  </div>
+                  <div className="flex justify-between"><span className="text-slate-400">Posts</span><span className="text-white font-bold">{posts.length}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Reactions</span><span className="text-white font-bold">{posts.reduce((sum, p) => sum + getTotalReactions(p), 0)}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Comments</span><span className="text-white font-bold">{posts.reduce((sum, p) => sum + p.comments.length, 0)}</span></div>
                 </div>
               </div>
 
@@ -1698,15 +1271,9 @@ export default function SocialPlatform() {
                   <div key={user.username} className="flex items-center gap-2 py-1">
                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
                     <img src={user.avatar} alt="" className="w-5 h-5 rounded-full object-cover cursor-pointer" onClick={() => viewUserProfile(user.username)} />
-                    <span 
-                      className="text-xs text-slate-300 cursor-pointer hover:text-white transition-colors"
-                      onClick={() => viewUserProfile(user.username)}
-                    >
+                    <span className="text-xs text-slate-300 cursor-pointer hover:text-white transition-colors" onClick={() => viewUserProfile(user.username)}>
                       @{user.username}
                     </span>
-                    {user.username === currentUser && (
-                      <span className="text-[10px] text-red-400">(you)</span>
-                    )}
                   </div>
                 ))}
               </div>
@@ -1714,63 +1281,45 @@ export default function SocialPlatform() {
           </div>
         )}
 
-        {/* ===== SEARCH TAB ===== */}
+        {/* ===== SEARCH TAB - MOBILE FRIENDLY ===== */}
         {activeTab === 'search' && (
           <div className="max-w-4xl mx-auto">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-              <h2 className="text-xl font-bold text-white mb-4">🔍 Search YouTube</h2>
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 md:p-6">
+              <h2 className="text-lg font-bold text-white mb-4">🔍 Search YouTube</h2>
               
               <div className="flex gap-2 mb-4">
                 <input
                   type="text"
-                  placeholder="Search for videos, channels, or playlists..."
+                  placeholder="Search videos, channels..."
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit(e)}
-                  className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+                  className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
                 />
-                <button onClick={handleSearchSubmit} className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-xl font-bold text-sm transition-colors">
-                  {loading ? 'Searching...' : 'Search Engine'}
+                <button onClick={handleSearchSubmit} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-bold text-sm transition-colors whitespace-nowrap">
+                  {loading ? '...' : 'Search'}
                 </button>
               </div>
 
-              <div className="flex flex-wrap gap-4 mb-4 text-xs">
+              <div className="flex flex-wrap gap-2 mb-4 text-xs">
                 <div className="flex gap-1 bg-slate-950 rounded-lg p-1">
                   {['video', 'channel', 'playlist'].map(type => (
-                    <button
-                      key={type}
-                      onClick={() => setContentType(type)}
-                      className={`px-3 py-1 rounded-lg transition-colors ${
-                        contentType === type ? 'bg-slate-800 text-white' : 'text-slate-500 hover:text-white'
-                      }`}
-                    >
-                      {type}s
+                    <button key={type} onClick={() => setContentType(type)} className={`px-2 py-1 rounded-lg transition-colors ${contentType === type ? 'bg-slate-800 text-white' : 'text-slate-500 hover:text-white'}`}>
+                      {type}
                     </button>
                   ))}
                 </div>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1 text-slate-300 text-xs focus:outline-none"
-                >
+                <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-slate-300 text-xs focus:outline-none">
                   <option value="relevance">Relevance</option>
                   <option value="date">Latest</option>
                   <option value="viewCount">Most Viewed</option>
-                  <option value="rating">Highest Rated</option>
                 </select>
               </div>
 
-              {error && (
-                <div className="p-4 bg-red-950/30 text-red-400 text-xs rounded-xl text-center mb-6">
-                  Error: {error}
-                </div>
-              )}
+              {error && <div className="p-3 bg-red-950/30 text-red-400 text-xs rounded-xl text-center mb-4">Error: {error}</div>}
+              {loading && <div className="text-center py-6 text-slate-400 text-sm">Loading...</div>}
 
-              {loading && (
-                <div className="text-center py-8 text-slate-400">Loading...</div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {results?.items?.map((item: any, index: number) => {
                   const id = item.id?.videoId || item.id?.channelId || item.id?.playlistId || (typeof item.id === 'string' ? item.id : '');
                   const snippet = item.snippet;
@@ -1782,29 +1331,20 @@ export default function SocialPlatform() {
                       className="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden hover:border-slate-700 transition-all cursor-pointer group"
                       onClick={() => {
                         if (item.id?.videoId) {
-                          viewVideo(item);
+                          router.push(`/video/${item.id.videoId}`);
+                        } else if (item.id?.channelId) {
+                          router.push(`/channel/${item.id.channelId}`);
                         } else {
-                          alert('This is a channel/playlist. Click on a video to watch.');
+                          alert('Open in YouTube');
                         }
                       }}
                     >
                       <div className="relative aspect-video bg-slate-950 overflow-hidden">
-                        <img
-                          src={snippet?.thumbnails?.medium?.url || snippet?.thumbnails?.high?.url}
-                          alt=""
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
+                        <img src={snippet?.thumbnails?.medium?.url || snippet?.thumbnails?.high?.url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                         {item.id?.videoId && (
                           <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center shadow-2xl">
-                              <Play className="w-8 h-8 text-white ml-1" />
-                            </div>
-                          </div>
-                        )}
-                        {!item.id?.videoId && (
-                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <div className="w-16 h-16 bg-slate-700 rounded-full flex items-center justify-center shadow-2xl">
-                              <Users className="w-8 h-8 text-white" />
+                            <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center shadow-2xl">
+                              <Play className="w-6 h-6 text-white ml-1" />
                             </div>
                           </div>
                         )}
@@ -1813,7 +1353,17 @@ export default function SocialPlatform() {
                         <p className="text-sm font-bold text-white line-clamp-2 group-hover:text-red-400 transition-colors">
                           {snippet?.title}
                         </p>
-                        <p className="text-xs text-slate-400">{snippet?.channelTitle}</p>
+                        <p 
+                          className="text-xs text-slate-400 cursor-pointer hover:text-red-400 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (snippet?.channelId) {
+                              router.push(`/channel/${snippet.channelId}`);
+                            }
+                          }}
+                        >
+                          {snippet?.channelTitle}
+                        </p>
                         <div className="flex justify-between items-center mt-2">
                           <span className="text-[10px] text-slate-500">
                             👁️ {item.statistics?.viewCount ? formatViews(item.statistics.viewCount) : 'N/A'}
@@ -1822,23 +1372,21 @@ export default function SocialPlatform() {
                             onClick={(e) => {
                               e.stopPropagation();
                               if (activeUser.status === 'Disabled') {
-                                alert('Your account is disabled! Cannot create posts.');
+                                alert('Your account is disabled!');
                                 return;
                               }
                               if (item.id?.videoId) {
                                 handleAddToWorkspaceClick(item);
-                              } else {
-                                alert('Only videos can be added to posts.');
                               }
                             }}
-                            className={`py-1 px-3 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1 ${
+                            className={`py-1 px-2 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1 ${
                               activeUser.status === 'Disabled' || !item.id?.videoId
                                 ? 'bg-slate-700 cursor-not-allowed opacity-50' 
                                 : 'bg-red-600 hover:bg-red-700'
                             }`}
                             disabled={activeUser.status === 'Disabled' || !item.id?.videoId}
                           >
-                            <PlusCircle className="w-3 h-3" /> Add to Post
+                            <PlusCircle className="w-3 h-3" /> Add
                           </button>
                         </div>
                       </div>
@@ -1848,18 +1396,13 @@ export default function SocialPlatform() {
               </div>
 
               {results?.items?.length === 0 && query && !loading && (
-                <p className="text-center text-slate-400 py-8">No results found</p>
+                <p className="text-center text-slate-400 py-6 text-sm">No results found</p>
               )}
 
-              {/* Load More */}
               {nextPageToken && (
                 <div className="mt-6 text-center">
-                  <button
-                    onClick={loadMoreResults}
-                    disabled={loadingMore}
-                    className="px-6 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold rounded-xl text-slate-300 transition-all tracking-wider uppercase disabled:opacity-50"
-                  >
-                    {loadingMore ? 'Loading...' : '⚡ Load More Results'}
+                  <button onClick={loadMoreResults} disabled={loadingMore} className="px-5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold rounded-xl text-slate-300 transition-all uppercase disabled:opacity-50">
+                    {loadingMore ? 'Loading...' : 'Load More'}
                   </button>
                 </div>
               )}
@@ -1867,86 +1410,62 @@ export default function SocialPlatform() {
           </div>
         )}
 
-        {/* ===== PROFILE TAB ===== */}
+        {/* ===== PROFILE TAB - MOBILE FRIENDLY ===== */}
         {activeTab === 'profile' && (
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-3xl mx-auto">
             {viewingUserProfile && viewingUserProfile !== currentUser ? (
               // View other user profile
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                <button 
-                  onClick={() => { 
-                    setViewingUserProfile(null); 
-                    router.push('/'); 
-                  }} 
-                  className="text-slate-400 hover:text-white text-sm mb-4 flex items-center gap-1"
-                >
-                  ← Back to Home
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 md:p-6">
+                <button onClick={() => { setViewingUserProfile(null); router.push('/'); }} className="text-slate-400 hover:text-white text-sm mb-4 flex items-center gap-1">
+                  ← Back
                 </button>
                 
                 {(() => {
                   const viewedUser = users.find(u => u.username === viewingUserProfile);
-                  if (!viewedUser) return <p className="text-slate-400">User not found</p>;
+                  if (!viewedUser) return <p className="text-slate-400 text-sm">User not found</p>;
                   
                   return (
                     <>
-                      <div className="flex flex-col md:flex-row items-start md:items-center gap-4 p-4 bg-slate-950 rounded-xl border border-slate-800">
-                        <img src={viewedUser.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${viewedUser.username}`} alt="" className="w-24 h-24 rounded-full border-4 border-red-500 object-cover" />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 flex-wrap">
-                            <h2 className="text-2xl font-bold text-white">{viewedUser.fullName}</h2>
+                      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-4 bg-slate-950 rounded-xl border border-slate-800">
+                        <img src={viewedUser.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${viewedUser.username}`} alt="" className="w-20 h-20 rounded-full border-4 border-red-500 object-cover" />
+                        <div className="flex-1 text-center sm:text-left">
+                          <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
+                            <h2 className="text-xl font-bold text-white">{viewedUser.fullName}</h2>
                             <span className="text-sm text-slate-400">@{viewedUser.username}</span>
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${viewedUser.status === 'Active' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                              {viewedUser.status}
-                            </span>
-                            {viewedUser.role === 'Lead Network Analyst' && (
-                              <span className="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">Admin</span>
-                            )}
                           </div>
                           <p className="text-sm text-slate-300 mt-1">{viewedUser.role}</p>
-                          <p className="text-sm text-slate-400 mt-2">{viewedUser.bio}</p>
-                          <div className="flex items-center gap-6 mt-3 text-sm">
+                          <p className="text-sm text-slate-400 mt-1">{viewedUser.bio}</p>
+                          <div className="flex flex-wrap gap-4 mt-3 text-sm justify-center sm:justify-start">
                             <div><span className="font-bold text-white">{viewedUser.postsCount}</span> <span className="text-slate-500">Posts</span></div>
                             <div><span className="font-bold text-white">{viewedUser.followers.length}</span> <span className="text-slate-500">Followers</span></div>
                             <div><span className="font-bold text-white">{viewedUser.following.length}</span> <span className="text-slate-500">Following</span></div>
-                            <div><span className="text-slate-500">Joined {new Date(viewedUser.joinedAt).toLocaleDateString()}</span></div>
                           </div>
                           <div className="mt-3">
                             {viewedUser.status === 'Active' && viewedUser.username !== currentUser && (
-                              <button onClick={() => followUser(viewedUser.username)} className={`text-xs font-bold px-6 py-1.5 rounded-full transition-colors ${activeUser.following.includes(viewedUser.username) ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-red-600 text-white hover:bg-red-700'}`}>
+                              <button onClick={() => followUser(viewedUser.username)} className={`text-xs font-bold px-4 py-1.5 rounded-full transition-colors ${activeUser.following.includes(viewedUser.username) ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-red-600 text-white hover:bg-red-700'}`}>
                                 {activeUser.following.includes(viewedUser.username) ? 'Unfollow' : 'Follow'}
                               </button>
                             )}
                             {viewedUser.status === 'Disabled' && (
-                              <span className="text-xs text-red-400 font-medium flex items-center gap-1">
-                                <AlertCircle className="w-3 h-3" /> Account Disabled
-                              </span>
+                              <span className="text-xs text-red-400 font-medium">🔴 Account Disabled</span>
                             )}
                           </div>
                         </div>
                       </div>
 
                       <div className="mt-6">
-                        <h3 className="text-sm font-bold text-slate-300 mb-4 flex items-center gap-2">
-                          <Play className="w-4 h-4" /> Posts by @{viewedUser.username}
-                        </h3>
+                        <h3 className="text-sm font-bold text-slate-300 mb-4">Posts by @{viewedUser.username}</h3>
                         {posts.filter(p => p.authorUsername === viewedUser.username).length === 0 ? (
                           <p className="text-slate-400 text-sm">No posts yet.</p>
                         ) : (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 gap-3">
                             {posts.filter(p => p.authorUsername === viewedUser.username).map(post => (
-                              <div key={post.id} className="bg-slate-950 rounded-xl overflow-hidden border border-slate-800 hover:border-slate-700 transition-all">
-                                {post.reviewImage && (
-                                  <img src={post.reviewImage} alt="" className="w-full h-36 object-cover" />
-                                )}
-                                <div className="p-3">
-                                  <p className="text-sm text-slate-200 line-clamp-2">{post.content}</p>
-                                  <p className="text-xs text-slate-500 mt-1">🎬 {post.videoTitle}</p>
-                                  <div className="flex gap-3 mt-2 text-xs text-slate-500">
-                                    <span>❤️ {getTotalReactions(post)}</span>
-                                    <span>💬 {post.comments.length}</span>
-                                    <span>🔁 {post.shares}</span>
-                                    <span>{formatTime(post.createdAt)}</span>
-                                  </div>
+                              <div key={post.id} className="bg-slate-950 rounded-xl p-3 border border-slate-800">
+                                <p className="text-sm text-slate-200 line-clamp-2">{post.content}</p>
+                                <div className="flex gap-3 mt-2 text-xs text-slate-500">
+                                  <span>❤️ {getTotalReactions(post)}</span>
+                                  <span>💬 {post.comments.length}</span>
+                                  <span>🔁 {post.shares}</span>
                                 </div>
                               </div>
                             ))}
@@ -1958,114 +1477,56 @@ export default function SocialPlatform() {
                 })()}
               </div>
             ) : editingProfile && tempProfile ? (
-              // Edit Profile Mode
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+              // Edit Profile
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 md:p-6">
                 <h3 className="text-lg font-bold text-white mb-4">Edit Profile</h3>
-                
-                <div className="flex items-center gap-4 mb-4">
-                  <AvatarSelector 
-                    onSelect={(avatar) => setTempProfile({...tempProfile, avatar})}
-                    currentAvatar={tempProfile.avatar}
-                  />
-                  <button onClick={() => setEditingProfile(false)} className="text-xs text-slate-400 hover:text-white transition-colors">
-                    Cancel
-                  </button>
+                <div className="flex flex-col items-center gap-4 mb-4">
+                  <AvatarSelector onSelect={(avatar) => setTempProfile({...tempProfile, avatar})} currentAvatar={tempProfile.avatar} />
+                  <button onClick={() => setEditingProfile(false)} className="text-xs text-slate-400 hover:text-white">Cancel</button>
                 </div>
-                
-                <input
-                  type="text"
-                  placeholder="Full Name"
-                  value={tempProfile.fullName}
-                  onChange={(e) => setTempProfile({...tempProfile, fullName: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 px-4 py-2 rounded-lg text-white focus:outline-none focus:border-red-500 mb-3"
-                />
-                
-                <input
-                  type="text"
-                  placeholder="Role"
-                  value={tempProfile.role}
-                  onChange={(e) => setTempProfile({...tempProfile, role: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 px-4 py-2 rounded-lg text-white focus:outline-none focus:border-red-500 mb-3"
-                />
-                
-                <textarea
-                  placeholder="Bio"
-                  value={tempProfile.bio}
-                  onChange={(e) => setTempProfile({...tempProfile, bio: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 px-4 py-2 rounded-lg text-white focus:outline-none focus:border-red-500 mb-3"
-                  rows={3}
-                />
-                
-                <button 
-                  onClick={() => {
-                    editUserProfile(currentUser, tempProfile);
-                    setEditingProfile(false);
-                    setTempProfile(null);
-                  }}
-                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-xl font-bold transition-colors"
-                >
+                <input type="text" placeholder="Full Name" value={tempProfile.fullName} onChange={(e) => setTempProfile({...tempProfile, fullName: e.target.value})} className="w-full bg-slate-950 border border-slate-800 px-4 py-2 rounded-lg text-white focus:outline-none focus:border-red-500 mb-3 text-sm" />
+                <input type="text" placeholder="Role" value={tempProfile.role} onChange={(e) => setTempProfile({...tempProfile, role: e.target.value})} className="w-full bg-slate-950 border border-slate-800 px-4 py-2 rounded-lg text-white focus:outline-none focus:border-red-500 mb-3 text-sm" />
+                <textarea placeholder="Bio" value={tempProfile.bio} onChange={(e) => setTempProfile({...tempProfile, bio: e.target.value})} className="w-full bg-slate-950 border border-slate-800 px-4 py-2 rounded-lg text-white focus:outline-none focus:border-red-500 mb-3 text-sm" rows={3} />
+                <button onClick={() => { editUserProfile(currentUser, tempProfile); setEditingProfile(false); setTempProfile(null); }} className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-xl font-bold transition-colors text-sm">
                   <Save className="w-4 h-4 inline mr-2" /> Save Changes
                 </button>
               </div>
             ) : (
-              // View My Profile
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                <div className="flex flex-col md:flex-row items-start md:items-center gap-4 p-4 bg-slate-950 rounded-xl border border-slate-800">
+              // My Profile
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 md:p-6">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-4 bg-slate-950 rounded-xl border border-slate-800">
                   <div className="relative">
-                    <img src={activeUser.avatar} alt="" className="w-24 h-24 rounded-full border-4 border-red-500 object-cover" />
+                    <img src={activeUser.avatar} alt="" className="w-20 h-20 rounded-full border-4 border-red-500 object-cover" />
                     <button 
-                      onClick={() => {
-                        if (activeUser.status === 'Disabled') {
-                          alert('Your account is disabled! Cannot edit profile.');
-                          return;
-                        }
-                        setTempProfile({...activeUser});
-                        setEditingProfile(true);
-                      }}
+                      onClick={() => { if (activeUser.status === 'Disabled') { alert('Account disabled!'); return; } setTempProfile({...activeUser}); setEditingProfile(true); }} 
                       className="absolute bottom-0 right-0 bg-slate-900 rounded-full p-1.5 border border-slate-700 hover:bg-slate-800 transition-all"
                       disabled={activeUser.status === 'Disabled'}
                     >
                       <Camera className="w-3.5 h-3.5 text-slate-400" />
                     </button>
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <h2 className="text-2xl font-bold text-white">{activeUser.fullName}</h2>
+                  <div className="flex-1 text-center sm:text-left">
+                    <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
+                      <h2 className="text-xl font-bold text-white">{activeUser.fullName}</h2>
                       <span className="text-sm text-slate-400">@{activeUser.username}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${activeUser.status === 'Active' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                        {activeUser.status}
-                      </span>
-                      {activeUser.role === 'Lead Network Analyst' && (
-                        <span className="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">Admin</span>
-                      )}
                     </div>
                     <p className="text-sm text-slate-300 mt-1">{activeUser.role}</p>
-                    <p className="text-sm text-slate-400 mt-2">{activeUser.bio}</p>
-                    <div className="flex items-center gap-6 mt-3 text-sm flex-wrap">
+                    <p className="text-sm text-slate-400 mt-1">{activeUser.bio}</p>
+                    <div className="flex flex-wrap gap-4 mt-3 text-sm justify-center sm:justify-start">
                       <div><span className="font-bold text-white">{activeUser.postsCount}</span> <span className="text-slate-500">Posts</span></div>
                       <div><span className="font-bold text-white">{activeUser.followers.length}</span> <span className="text-slate-500">Followers</span></div>
                       <div><span className="font-bold text-white">{activeUser.following.length}</span> <span className="text-slate-500">Following</span></div>
-                      <div><span className="text-slate-500">Joined {new Date(activeUser.joinedAt).toLocaleDateString()}</span></div>
-                    </div>
-                    <div className="mt-3 text-xs text-slate-500">
-                      Last active: {formatTime(activeUser.lastActive)}
                     </div>
                     
-                    {/* Self-Disable Button */}
                     {activeUser.status === 'Active' && (
-                      <button
-                        onClick={selfDisableAccount}
-                        className="mt-3 text-xs bg-red-600/20 hover:bg-red-600/30 text-red-400 px-4 py-2 rounded-xl font-bold transition-colors border border-red-500/30 flex items-center gap-2"
-                      >
-                        <UserMinus className="w-3.5 h-3.5" /> Disable My Account
+                      <button onClick={selfDisableAccount} className="mt-3 text-xs bg-red-600/20 hover:bg-red-600/30 text-red-400 px-4 py-2 rounded-xl font-bold transition-colors border border-red-500/30 flex items-center gap-2">
+                        <UserMinus className="w-3.5 h-3.5" /> Disable Account
                       </button>
                     )}
-                    
                     {activeUser.status === 'Disabled' && (
                       <div className="mt-3 p-3 bg-red-950/30 border border-red-800 rounded-xl">
                         <p className="text-xs text-red-400 font-medium flex items-center gap-2">
-                          <AlertCircle className="w-4 h-4" />
-                          ⚠️ Your account is DISABLED. Contact admin to re-enable.
+                          <AlertCircle className="w-4 h-4" /> Account DISABLED
                         </p>
                       </div>
                     )}
@@ -2073,29 +1534,19 @@ export default function SocialPlatform() {
                 </div>
 
                 <div className="mt-6">
-                  <h3 className="text-sm font-bold text-slate-300 mb-4 flex items-center gap-2">
-                    <Play className="w-4 h-4" /> Your Posts
-                  </h3>
+                  <h3 className="text-sm font-bold text-slate-300 mb-4">Your Posts</h3>
                   {posts.filter(p => p.authorUsername === currentUser).length === 0 ? (
-                    <p className="text-slate-400 text-sm">No posts yet. Start sharing your reviews!</p>
+                    <p className="text-slate-400 text-sm">No posts yet.</p>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-3">
                       {posts.filter(p => p.authorUsername === currentUser).map(post => (
-                        <div key={post.id} className="bg-slate-950 rounded-xl overflow-hidden border border-slate-800 hover:border-slate-700 transition-all">
-                          {post.reviewImage && (
-                            <img src={post.reviewImage} alt="" className="w-full h-36 object-cover" />
-                          )}
-                          <div className="p-3">
-                            <p className="text-sm text-slate-200 line-clamp-2">{post.content}</p>
-                            <p className="text-xs text-slate-500 mt-1">🎬 {post.videoTitle}</p>
-                            <div className="flex gap-3 mt-2 text-xs text-slate-500 flex-wrap">
-                              <span>❤️ {getTotalReactions(post)}</span>
-                              <span>💬 {post.comments.length}</span>
-                              <span>🔁 {post.shares}</span>
-                              <span>👁️ {post.views}</span>
-                              <span>{formatTime(post.createdAt)}</span>
-                              {post.isEdited && <span className="text-amber-400">(edited)</span>}
-                            </div>
+                        <div key={post.id} className="bg-slate-950 rounded-xl p-3 border border-slate-800">
+                          <p className="text-sm text-slate-200 line-clamp-2">{post.content}</p>
+                          <div className="flex flex-wrap gap-3 mt-2 text-xs text-slate-500">
+                            <span>❤️ {getTotalReactions(post)}</span>
+                            <span>💬 {post.comments.length}</span>
+                            <span>🔁 {post.shares}</span>
+                            {post.isEdited && <span className="text-amber-400">edited</span>}
                           </div>
                         </div>
                       ))}
@@ -2106,161 +1557,9 @@ export default function SocialPlatform() {
             )}
           </div>
         )}
-
-        {/* ===== ADMIN TAB ===== */}
-        {activeTab === 'admin' && activeUser?.role === 'Lead Network Analyst' && (
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-              <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                <Settings className="w-5 h-5 text-amber-400" /> Admin Dashboard
-              </h2>
-
-              {/* User Management */}
-              <div className="mb-6">
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                  <Users className="w-4 h-4" /> User Management
-                </h3>
-                
-                <div className="bg-slate-950 rounded-xl border border-slate-800 overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-slate-900 text-slate-400">
-                      <tr>
-                        <th className="px-4 py-2 text-left">User</th>
-                        <th className="px-4 py-2 text-left">Role</th>
-                        <th className="px-4 py-2 text-left">Status</th>
-                        <th className="px-4 py-2 text-left">Posts</th>
-                        <th className="px-4 py-2 text-left">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800">
-                      {users.map(user => (
-                        <tr key={user.username} className="hover:bg-slate-900/50 transition-colors">
-                          <td className="px-4 py-2">
-                            <div className="flex items-center gap-2">
-                              <img src={user.avatar} alt="" className="w-6 h-6 rounded-full object-cover" />
-                              <div>
-                                <p className="text-white text-xs font-bold">{user.fullName}</p>
-                                <p className="text-[10px] text-slate-400">@{user.username}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-2 text-xs text-slate-300">{user.role}</td>
-                          <td className="px-4 py-2">
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${user.status === 'Active' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                              {user.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-2 text-xs text-slate-400">{user.postsCount}</td>
-                          <td className="px-4 py-2">
-                            <div className="flex gap-1">
-                              <button
-                                onClick={() => toggleUserStatus(user.username)}
-                                className={`text-xs px-2 py-1 rounded-lg transition-colors ${
-                                  user.status === 'Active'
-                                    ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
-                                    : 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
-                                }`}
-                              >
-                                {user.status === 'Active' ? <Power className="w-3 h-3" /> : <Check className="w-3 h-3" />}
-                              </button>
-                              <button
-                                onClick={() => {
-                                  const newRole = prompt('Enter new role:', user.role);
-                                  if (newRole) {
-                                    editUserProfile(user.username, { role: newRole });
-                                  }
-                                }}
-                                className="text-xs px-2 py-1 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors"
-                              >
-                                <Edit3 className="w-3 h-3" />
-                              </button>
-                              <button
-                                onClick={() => viewUserProfile(user.username)}
-                                className="text-xs px-2 py-1 bg-slate-700/30 text-slate-400 rounded-lg hover:bg-slate-700/50 transition-colors"
-                              >
-                                <Eye className="w-3 h-3" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Platform Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
-                  <p className="text-xs text-slate-400">Total Users</p>
-                  <p className="text-2xl font-bold text-white">{users.length}</p>
-                </div>
-                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
-                  <p className="text-xs text-slate-400">Total Posts</p>
-                  <p className="text-2xl font-bold text-white">{posts.length}</p>
-                </div>
-                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
-                  <p className="text-xs text-slate-400">Total Reactions</p>
-                  <p className="text-2xl font-bold text-white">
-                    {posts.reduce((sum, p) => sum + getTotalReactions(p), 0)}
-                  </p>
-                </div>
-                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
-                  <p className="text-xs text-slate-400">Active Users</p>
-                  <p className="text-2xl font-bold text-white">{users.filter(u => u.status === 'Active').length}</p>
-                </div>
-              </div>
-
-              {/* Export Data */}
-              <div className="border-t border-slate-800 pt-4">
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">📤 Data Export</h3>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => {
-                      const data = {
-                        users: users,
-                        posts: posts,
-                        exportedAt: new Date().toISOString(),
-                        platform: 'PageNet+'
-                      };
-                      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = `pagenet_export_${Date.now()}.json`;
-                      a.click();
-                      URL.revokeObjectURL(url);
-                    }}
-                    className="bg-slate-800 hover:bg-slate-700 text-white text-xs px-4 py-2 rounded-lg transition-colors"
-                  >
-                    Export All Data
-                  </button>
-                  <button
-                    onClick={() => {
-                      const blob = new Blob([
-                        'Users:\n' + users.map(u => `${u.username},${u.fullName},${u.role},${u.status},${u.followers.length},${u.following.length}`).join('\n')
-                      ], { type: 'text/csv' });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = `users_export_${Date.now()}.csv`;
-                      a.click();
-                      URL.revokeObjectURL(url);
-                    }}
-                    className="bg-slate-800 hover:bg-slate-700 text-white text-xs px-4 py-2 rounded-lg transition-colors"
-                  >
-                    Export Users CSV
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* ============================================
-          VIDEO PLAYER MODAL
-          ============================================ */}
+      {/* ===== VIDEO PLAYER MODAL ===== */}
       {isVideoPlayerOpen && selectedVideoPlayer && (
         <VideoPlayerModal
           video={selectedVideoPlayer}

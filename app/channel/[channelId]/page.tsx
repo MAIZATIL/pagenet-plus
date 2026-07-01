@@ -1,56 +1,67 @@
+// app/video/[videoId]/page.tsx
 'use client';
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
+import { ArrowLeft, ThumbsUp, Eye, Calendar, Share2, Copy, ExternalLink, MessageCircle, Send } from 'lucide-react';
 
 interface PageProps {
-  params: Promise<{ channelId: string }>;
+  params: Promise<{ videoId: string }>;
 }
 
-export default function ChannelProfilePage({ params }: PageProps) {
-  const { channelId } = use(params);
+export default function VideoPage({ params }: PageProps) {
+  const { videoId } = use(params);
+  const [videoData, setVideoData] = useState<any>(null);
   const [channelData, setChannelData] = useState<any>(null);
-  const [latestVideos, setLatestVideos] = useState<any[]>([]);
-  const [playlists, setPlaylists] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'videos' | 'playlists' | 'about'>('videos');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [commentText, setCommentText] = useState('');
 
-  const apiKey = 'AIzaSyB20PVjQIVoiawwbWKycWXDIOcrdygfsc0';
+  const apiKey = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY || '';
 
   useEffect(() => {
-    const fetchChannelEcosystem = async () => {
-      if (!channelId) return;
+    const fetchVideoData = async () => {
+      if (!videoId) return;
       setLoading(true);
       setError('');
 
+      if (!apiKey) {
+        setError('YouTube API key is not configured.');
+        setLoading(false);
+        return;
+      }
+
       try {
-        const channelRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,brandingSettings&id=${channelId}&key=${apiKey}`);
-        const channelJson = await channelRes.json();
+        // Fetch video details
+        const videoRes = await fetch(
+          `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${videoId}&key=${apiKey}`
+        );
+        const videoJson = await videoRes.json();
 
-        if (channelJson.items && channelJson.items.length > 0) {
-          setChannelData(channelJson.items[0]);
+        if (videoJson.items && videoJson.items.length > 0) {
+          setVideoData(videoJson.items[0]);
+          
+          // Fetch channel details
+          const channelId = videoJson.items[0].snippet.channelId;
+          const channelRes = await fetch(
+            `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}&key=${apiKey}`
+          );
+          const channelJson = await channelRes.json();
+          if (channelJson.items) {
+            setChannelData(channelJson.items[0]);
+          }
         } else {
-          throw new Error('Channel matrix node not found.');
+          throw new Error('Video not found.');
         }
-
-        const videosRes = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=12&order=date&type=video&key=${apiKey}`);
-        const videosJson = await videosRes.json();
-        if (videosJson.items) setLatestVideos(videosJson.items);
-
-        const playlistsRes = await fetch(`https://www.googleapis.com/youtube/v3/playlists?part=snippet&channelId=${channelId}&maxResults=6&key=${apiKey}`);
-        const playlistsJson = await playlistsRes.json();
-        if (playlistsJson.items) setPlaylists(playlistsJson.items);
-
       } catch (err: any) {
-        setError(err.message || 'An error occurred while resolving channel telemetries.');
+        setError(err.message || 'An error occurred.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchChannelEcosystem();
-  }, [channelId]);
+    fetchVideoData();
+  }, [videoId]);
 
   const formatViews = (views: string) => {
     if (!views) return '0';
@@ -61,99 +72,165 @@ export default function ChannelProfilePage({ params }: PageProps) {
     return num.toString();
   };
 
-  if (loading) return <div className="min-h-screen bg-slate-950 text-slate-400 flex items-center justify-center text-xs">Resolving channel node architecture...</div>;
-  if (error) return <div className="min-h-screen bg-slate-950 text-red-400 flex items-center justify-center text-xs">⚠️ Error: {error}</div>;
+  const mockComments = [
+    { author: 'User_01', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=user1', text: 'This is amazing! 🔥', time: '2 hours ago', likes: 12 },
+    { author: 'Analyst_Pro', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=analyst', text: 'Great content!', time: '5 hours ago', likes: 8 },
+    { author: 'Data_Scientist', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=data', text: 'Keep it up! 🙏', time: '1 day ago', likes: 5 }
+  ];
 
-  const snippet = channelData?.snippet;
-  const stats = channelData?.statistics;
-  const branding = channelData?.brandingSettings;
-  const bannerUrl = branding?.image?.bannerExternalUrl ? `${branding.image.bannerExternalUrl}=w1060-fcrop64=1,00005a57ffffa5a7-k-c0xffffffff-no-nd-rj` : null;
+  if (loading) return (
+    <div className="min-h-screen bg-slate-950 text-slate-400 flex flex-col items-center justify-center gap-4">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+      <p className="text-sm">Loading video...</p>
+    </div>
+  );
+
+  if (error) return (
+    <div className="min-h-screen bg-slate-950 text-red-400 flex flex-col items-center justify-center gap-4 p-4">
+      <p className="text-sm text-center max-w-md">⚠️ Error: {error}</p>
+      <Link href="/" className="text-xs text-slate-400 hover:text-white transition-colors">← Return Home</Link>
+    </div>
+  );
+
+  const snippet = videoData?.snippet;
+  const statistics = videoData?.statistics;
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 font-sans">
-      <div className="w-full h-36 md:h-48 bg-slate-900 relative overflow-hidden">
-        {bannerUrl ? <img src={bannerUrl} alt="" className="w-full h-full object-cover opacity-80" /> : <div className="w-full h-full bg-slate-900" />}
-        <div className="absolute top-4 left-6 z-10">
-          <Link href="/" className="px-3 py-1.5 bg-slate-950/80 text-xs text-slate-300 rounded-lg border border-slate-800/80">← Return Hub</Link>
-        </div>
-      </div>
+    <main className="min-h-screen bg-slate-950 text-slate-100">
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        {/* Back Button */}
+        <Link 
+          href="/" 
+          className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors mb-4"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to Home
+        </Link>
 
-      <div className="max-w-5xl mx-auto px-6 md:px-12 -mt-10 relative z-20 pb-16">
-        <div className="flex flex-col md:flex-row items-center md:items-end gap-5 text-center md:text-left mb-8">
-          <img src={snippet?.thumbnails?.high?.url} alt="" className="w-24 h-24 rounded-full border-4 border-slate-950 object-cover shadow-xl" />
-          <div className="mb-2">
-            <h1 className="text-2xl font-black text-slate-100">{snippet?.title}</h1>
-            <p className="text-xs text-red-400 font-mono">{snippet?.customUrl || `@${channelId}`}</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-3 bg-slate-900/60 border border-slate-800/60 p-4 rounded-xl max-w-xl mb-8 text-center md:text-left">
-          <div>
-            <span className="block text-slate-500 text-[10px] uppercase font-bold">Subscribers</span>
-            <span className="text-slate-200 font-bold text-sm">{formatViews(stats?.subscriberCount)}</span>
-          </div>
-          <div>
-            <span className="block text-slate-500 text-[10px] uppercase font-bold">Total Views</span>
-            <span className="text-slate-200 font-bold text-sm">{formatViews(stats?.viewCount)}</span>
-          </div>
-          <div>
-            <span className="block text-slate-500 text-[10px] uppercase font-bold">Videos</span>
-            <span className="text-slate-200 font-bold text-sm">{formatViews(stats?.videoCount)}</span>
-          </div>
+        {/* Video Player */}
+        <div className="aspect-video bg-slate-900 rounded-xl overflow-hidden">
+          <iframe
+            src={`https://www.youtube.com/embed/${videoId}`}
+            title={snippet?.title}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            className="w-full h-full"
+          />
         </div>
 
-        <div className="flex border-b border-slate-800 mb-6 gap-2">
-          {(['playlists', 'videos', 'about'] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-5 py-2.5 text-xs font-semibold uppercase tracking-wider border-b-2 -mb-[2px] ${activeTab === tab ? 'border-red-600 text-slate-100' : 'border-transparent text-slate-500'}`}
+        {/* Video Info */}
+        <div className="mt-4">
+          <h1 className="text-xl md:text-2xl font-bold text-white">{snippet?.title}</h1>
+          <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-slate-400">
+            <Link 
+              href={`/channel/${snippet?.channelId}`} 
+              className="flex items-center gap-2 hover:text-white transition-colors"
             >
-              {tab}
-            </button>
-          ))}
+              <img 
+                src={channelData?.snippet?.thumbnails?.default?.url} 
+                alt={snippet?.channelTitle}
+                className="w-6 h-6 rounded-full object-cover"
+              />
+              <span className="font-semibold">{snippet?.channelTitle}</span>
+            </Link>
+            <span>•</span>
+            <span className="flex items-center gap-1">
+              <Eye className="w-4 h-4" /> {formatViews(statistics?.viewCount)} views
+            </span>
+            <span>•</span>
+            <span className="flex items-center gap-1">
+              <ThumbsUp className="w-4 h-4" /> {formatViews(statistics?.likeCount)} likes
+            </span>
+          </div>
         </div>
 
-        <div>
-          {activeTab === 'videos' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {latestVideos.map((video) => {
-                const videoId = video.id?.videoId;
-                if (!videoId) return null;
-                return (
-                  <div key={videoId} className="bg-slate-900 border border-slate-800/40 rounded-xl overflow-hidden flex flex-col justify-between group">
-                    <img src={video.snippet?.thumbnails?.high?.url} alt="" className="aspect-video object-cover" />
-                    <div className="p-4 flex-1 flex flex-col justify-between">
-                      <Link href={`/video/${videoId}`} className="font-bold text-xs md:text-sm text-slate-200 hover:text-red-400 line-clamp-2">
-                        {video.snippet?.title}
-                      </Link>
-                      <span className="text-[10px] text-slate-500 block mt-3">{new Date(video.snippet?.publishedAt).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+        {/* Description */}
+        {snippet?.description && (
+          <div className="mt-3 p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+            <p className="text-sm text-slate-300 whitespace-pre-wrap line-clamp-3">
+              {snippet.description}
+            </p>
+            <button className="text-xs text-blue-400 hover:text-blue-300 mt-1">Show more</button>
+          </div>
+        )}
 
-          {activeTab === 'playlists' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {playlists.map((p) => (
-                <div key={p.id} className="bg-slate-900 border border-slate-800/40 rounded-xl overflow-hidden">
-                  <img src={p.snippet?.thumbnails?.high?.url} alt="" className="aspect-video object-cover" />
-                  <div className="p-4">
-                    <h3 className="font-bold text-xs text-slate-200 line-clamp-2">{p.snippet?.title}</h3>
-                    <a href={`https://www.youtube.com/playlist?list=${p.id}`} target="_blank" rel="noreferrer" className="text-[10px] text-red-400 block mt-4">Open Playlist ↗</a>
+        {/* Actions */}
+        <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-slate-800">
+          <button 
+            onClick={() => {
+              navigator.clipboard.writeText(`https://www.youtube.com/watch?v=${videoId}`);
+              alert('📋 Video link copied!');
+            }}
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-colors flex items-center gap-2"
+          >
+            <Copy className="w-4 h-4" /> Copy Link
+          </button>
+          <button 
+            onClick={() => {
+              window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
+            }}
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-colors flex items-center gap-2"
+          >
+            <ExternalLink className="w-4 h-4" /> Open YouTube
+          </button>
+          <button 
+            onClick={() => {
+              navigator.share?.({
+                title: snippet?.title,
+                text: `Check out this video: ${snippet?.title}`,
+                url: `https://www.youtube.com/watch?v=${videoId}`,
+              }).catch(() => {});
+            }}
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-colors flex items-center gap-2"
+          >
+            <Share2 className="w-4 h-4" /> Share
+          </button>
+        </div>
+
+        {/* Comments */}
+        <div className="mt-6 pt-4 border-t border-slate-800">
+          <h3 className="text-sm font-bold text-slate-300 mb-4 flex items-center gap-2">
+            <MessageCircle className="w-4 h-4" /> Comments ({mockComments.length})
+          </h3>
+
+          {/* Comment Input */}
+          <div className="flex gap-3 mb-4">
+            <input
+              type="text"
+              placeholder="Write a comment..."
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              className="flex-1 bg-slate-900 border border-slate-800 rounded-full px-4 py-2 text-sm text-white focus:outline-none focus:border-red-500"
+            />
+            <button className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-full transition-colors flex items-center gap-1">
+              <Send className="w-4 h-4" /> Post
+            </button>
+          </div>
+
+          {/* Comments List */}
+          <div className="space-y-4">
+            {mockComments.map((comment, index) => (
+              <div key={index} className="flex gap-3">
+                <img 
+                  src={comment.avatar} 
+                  alt={comment.author} 
+                  className="w-8 h-8 rounded-full object-cover" 
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-xs text-white">{comment.author}</span>
+                    <span className="text-[10px] text-slate-500">{comment.time}</span>
+                  </div>
+                  <p className="text-sm text-slate-300 mt-0.5">{comment.text}</p>
+                  <div className="flex items-center gap-4 mt-1">
+                    <button className="text-[10px] text-slate-500 hover:text-white transition-colors flex items-center gap-1">
+                      <ThumbsUp className="w-3 h-3" /> {comment.likes}
+                    </button>
+                    <button className="text-[10px] text-slate-500 hover:text-white transition-colors">Reply</button>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-
-          {activeTab === 'about' && (
-            <div className="bg-slate-900/40 border border-slate-800/60 rounded-xl p-6 max-w-3xl">
-              <p className="text-xs md:text-sm text-slate-300 font-light leading-relaxed whitespace-pre-wrap">{snippet?.description || 'No summary context.'}</p>
-            </div>
-          )}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </main>
