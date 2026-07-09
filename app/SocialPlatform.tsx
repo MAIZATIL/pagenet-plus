@@ -1,6 +1,7 @@
 // app/SocialPlatform.tsx
 'use client';
 
+import AIChatbot from './components/AIChatbot';
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { 
@@ -1900,6 +1901,14 @@ export default function SocialPlatform() {
           activeUser={activeUser}
         />
       )}
+      return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 pb-16 md:pb-0">
+      {/* ... semua UI sedia ada */}
+
+      {/* 🤖 AI Assistant */}
+      <AIChatbot />
+    </div>
+  );
     </div>
   );
 }
