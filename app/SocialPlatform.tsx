@@ -1908,7 +1908,7 @@ export default function SocialPlatform() {
       {/* 🤖 AI Assistant */}
       <AIChatbot />
     </div>
-  );
+  
     </div>
   );
 }
