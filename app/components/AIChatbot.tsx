@@ -33,16 +33,16 @@ export default function AIChatbot() {
 
   const getAIResponse = async (userMessage: string): Promise<string> => {
     const lower = userMessage.toLowerCase();
-    
+
     await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
 
     if (lower.includes('hello') || lower.includes('hi')) {
       return "Hello! 👋 How can I help you with your social network analysis today?";
     }
-    
+
     if (lower.includes('help') || lower.includes('what can you do')) {
       return `I can help you with:
-      
+
 📝 **Writing Reviews**: Get suggestions for your video reviews
 🔍 **Content Discovery**: Find trending topics in social network analysis
 📊 **Analysis Tips**: Learn about SNA concepts and metrics
@@ -81,15 +81,15 @@ Need more details on any of these?`;
     }
 
     if (lower.includes('trending') || lower.includes('popular')) {
-      return "🔥 **Trending Topics in SNA right now**:
-      
+      return `🔥 **Trending Topics in SNA right now**:
+
 1. **AI-powered network analysis** - Using machine learning for pattern detection
 2. **Social media influence mapping** - Understanding digital ecosystems
 3. **Fake news detection** - Network-based misinformation tracking
 4. **Community detection in large-scale networks** - Scalable algorithms
 5. **Temporal network analysis** - How networks evolve over time
 
-Want me to elaborate on any of these?";
+Want me to elaborate on any of these?`;
     }
 
     if (lower.includes('thank')) {
@@ -97,9 +97,9 @@ Want me to elaborate on any of these?";
     }
 
     return `🤔 That's an interesting question! I'm here to help with:
-    
+
 • Writing and improving review posts
-• Understanding social network analysis concepts  
+• Understanding social network analysis concepts
 • Finding relevant content and trends
 • Generating ideas for your next post
 
@@ -148,6 +148,7 @@ Could you tell me more specifically what you're looking for?`;
     }
   };
 
+  // Button floating - bila AI tak bukak
   if (!isOpen) {
     return (
       <button
@@ -162,6 +163,7 @@ Could you tell me more specifically what you're looking for?`;
     );
   }
 
+  // Chat window - bila AI terbuka
   return (
     <div className={`fixed z-50 transition-all duration-300 ${
       isMinimized 
@@ -169,6 +171,7 @@ Could you tell me more specifically what you're looking for?`;
         : 'bottom-4 right-4 w-[380px] h-[600px] md:w-[420px] md:h-[650px]'
     }`}>
       <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl flex flex-col h-full overflow-hidden">
+        {/* Header */}
         <div className="flex items-center justify-between p-3 border-b border-slate-800 bg-gradient-to-r from-red-600/20 to-purple-600/20">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-r from-red-500 to-purple-500 rounded-full flex items-center justify-center">
@@ -195,6 +198,7 @@ Could you tell me more specifically what you're looking for?`;
           </div>
         </div>
 
+        {/* Chat Messages - hanya nampak kalau tak minimize */}
         {!isMinimized && (
           <>
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -233,6 +237,7 @@ Could you tell me more specifically what you're looking for?`;
               <div ref={messagesEndRef} />
             </div>
 
+            {/* Input */}
             <div className="p-3 border-t border-slate-800 bg-slate-950/50">
               <div className="flex gap-2">
                 <input
