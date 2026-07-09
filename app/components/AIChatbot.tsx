@@ -148,11 +148,12 @@ Could you tell me more specifically what you're looking for?`;
     }
   };
 
+  // Button floating - naikkan ke atas (bottom-20 instead of bottom-6)
   if (!isOpen) {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 bg-gradient-to-r from-red-600 to-purple-600 hover:from-red-700 hover:to-purple-700 text-white rounded-full p-3 md:p-4 shadow-2xl transition-all hover:scale-110 group"
+        className="fixed bottom-20 right-6 z-50 bg-gradient-to-r from-red-600 to-purple-600 hover:from-red-700 hover:to-purple-700 text-white rounded-full p-3 md:p-4 shadow-2xl transition-all hover:scale-110 group"
       >
         <div className="relative">
           <Sparkles className="w-5 h-5 md:w-6 md:h-6" />
@@ -169,7 +170,7 @@ Could you tell me more specifically what you're looking for?`;
         : 'bottom-2 right-2 w-[calc(100vw-16px)] h-[80vh] max-h-[600px] md:bottom-4 md:right-4 md:w-[380px] md:h-[600px] md:max-h-[650px]'
     }`}>
       <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl flex flex-col h-full overflow-hidden">
-        {/* Header - Mobile Friendly */}
+        {/* Header */}
         <div className="flex items-center justify-between p-2.5 md:p-3 border-b border-slate-800 bg-gradient-to-r from-red-600/20 to-purple-600/20">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 md:w-8 md:h-8 bg-gradient-to-r from-red-500 to-purple-500 rounded-full flex items-center justify-center">
@@ -198,7 +199,6 @@ Could you tell me more specifically what you're looking for?`;
 
         {!isMinimized && (
           <>
-            {/* Messages - Mobile Friendly */}
             <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2 md:space-y-3">
               {messages.map((message) => (
                 <div
@@ -235,7 +235,6 @@ Could you tell me more specifically what you're looking for?`;
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input - Mobile Friendly */}
             <div className="p-2.5 md:p-3 border-t border-slate-800 bg-slate-950/50">
               <div className="flex gap-1.5 md:gap-2">
                 <input
